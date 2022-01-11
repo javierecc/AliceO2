@@ -36,9 +36,9 @@ class MisAligner
   MisAligner(double cartMisAligW, double angMisAligW);
     
   MisAligner();
-    
-  //virtual ~MisAligner();
-    virtual ~MisAligner() = default;
+
+  // virtual ~MisAligner();
+  virtual ~MisAligner() = default;
 
   //_________________________________________________________________
   // methods
