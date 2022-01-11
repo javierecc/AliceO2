@@ -43,3 +43,8 @@ o2_add_test_root_macro(
   drawMCHGeometry.C
   PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator O2::MathUtils
   LABELS muon mch)
+
+o2_add_test_root_macro(
+  misAlignGeometry.C
+  PUBLIC_LINK_LIBRARIES O2::MCHGeometryCreator O2::MathUtils
+  LABELS muon mch)
