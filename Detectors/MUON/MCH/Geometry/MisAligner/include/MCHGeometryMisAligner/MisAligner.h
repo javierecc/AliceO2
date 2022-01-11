@@ -37,7 +37,8 @@ class MisAligner
     
   MisAligner();
     
-  virtual ~MisAligner();
+  //virtual ~MisAligner();
+    virtual ~MisAligner() = default;
 
   //_________________________________________________________________
   // methods
@@ -97,23 +98,23 @@ class MisAligner
   /// Set module (half chambers) cartesian displacement parameters
   void SetModuleCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
   {
-    fModuleMisAlig[0][0] = xmean;
-    fModuleMisAlig[0][1] = xwidth;
-    fModuleMisAlig[1][0] = ymean;
-    fModuleMisAlig[1][1] = ywidth;
-    fModuleMisAlig[2][0] = zmean;
-    fModuleMisAlig[2][1] = zwidth;
+    mModuleMisAlig[0][0] = xmean;
+    mModuleMisAlig[0][1] = xwidth;
+    mModuleMisAlig[1][0] = ymean;
+    mModuleMisAlig[1][1] = ywidth;
+    mModuleMisAlig[2][0] = zmean;
+    mModuleMisAlig[2][1] = zwidth;
   }
 
   /// Set module (half chambers) cartesian displacement parameters
   void SetModuleAngMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
   {
-    fModuleMisAlig[3][0] = xmean;
-    fModuleMisAlig[3][1] = xwidth;
-    fModuleMisAlig[4][0] = ymean;
-    fModuleMisAlig[4][1] = ywidth;
-    fModuleMisAlig[5][0] = zmean;
-    fModuleMisAlig[5][1] = zwidth;
+    mModuleMisAlig[3][0] = xmean;
+    mModuleMisAlig[3][1] = xwidth;
+    mModuleMisAlig[4][0] = ymean;
+    mModuleMisAlig[4][1] = ywidth;
+    mModuleMisAlig[5][0] = zmean;
+    mModuleMisAlig[5][1] = zwidth;
   }
 
   /// Set alignment resolution to misalign objects to be stored in CDB
@@ -139,7 +140,7 @@ class MisAligner
   double mModuleMisAlig[6][2];  ///< Mean and width of the displacements of the modules along x,y,z (translations) and about x,y,z (rotations)
 
   double mXYAngMisAligFactor; ///< factor (<1) to apply to angular misalignment range since range of motion is restricted out of the xy plane
-  double fZCartMisAligFactor; ///< factor (<1) to apply to cartetian misalignment range since range of motion is restricted in z direction
+  double mZCartMisAligFactor; ///< factor (<1) to apply to cartetian misalignment range since range of motion is restricted in z direction
 };
 
 } // namespace geo

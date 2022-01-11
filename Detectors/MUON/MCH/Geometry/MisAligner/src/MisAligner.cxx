@@ -165,17 +165,13 @@ MisAligner::MisAligner()
   }
 }
 
+/*
 //______________________________________________________________________________
 MisAligner::~MisAligner()
 {
   /// Destructor
-    delete mUseUni;
-    delete mUseGaus;
-    delete mDetElemMisAlig;
-    delete mModuleMisAlig;
-    delete mXYAngMisAligFactor;
-    delete mZCartMisAligFactor;
 }
+ */
 
 //_________________________________________________________________________
 void MisAligner::SetXYAngMisAligFactor(double factor)
