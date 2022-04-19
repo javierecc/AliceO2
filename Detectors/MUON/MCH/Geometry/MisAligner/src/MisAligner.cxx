@@ -58,7 +58,7 @@
 #include <Riostream.h>
 
 #include "DetectorsCommonDataFormats/DetID.h"
-#include "DetectorsCommonDataFormats/NameConf.h"
+#include "DetectorsCommonDataFormats/DetectorNameConf.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"
 
 #include "CCDB/CcdbApi.h"
@@ -505,9 +505,9 @@ void MisAligner::MisAlign(Bool_t verbose)
     //     ->AddMisAlignDetElement(detElement->GetId(), deltaGlobalTransform);
     // }
 
-      if (verbose) {
+    if (verbose) {
       LOG(INFO) << Form("MisAligned half chamber %i", hc);
-      }
+    }
     // newGeometryTransformer->AddModuleTransformer(newModuleTransformer);
   }
   // return newGeometryTransformer;
