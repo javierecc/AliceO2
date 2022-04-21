@@ -30,7 +30,7 @@ void showGeometryAsTextTree(const char* fromPath = "", int maxdepth = 2, std::os
 void drawGeometry();
 
 /// generates misalignments for MCH geometry
-// void misAlignGeometry();
+void misAlignGeometry();
 
 /// set the volume and daughter visibility for all volumes with a name matching the regexp pattern
 void setVolumeVisibility(const char* pattern, bool visible, bool visibleDaughters);

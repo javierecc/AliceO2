@@ -16,6 +16,10 @@
 #ifndef O2_MCH_GEOMETRY_MIS_ALIGNER
 #define O2_MCH_GEOMETRY_MIS_ALIGNER
 
+#include "TObject.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
+#include <vector>
+
 class TGeoCombiTrans;
 class TClonesArray;
 
@@ -26,25 +30,25 @@ namespace mch
 namespace geo
 {
 
-class MisAligner
+class MisAligner : public TObject
 {
  public:
   MisAligner(double cartXMisAligM, double cartXMisAligW, double cartYMisAligM, double cartYMisAligW, double angMisAligM, double angMisAligW);
-    
+
   MisAligner(double cartMisAligM, double cartMisAligW, double angMisAligM, double angMisAligW);
-    
+
   MisAligner(double cartMisAligW, double angMisAligW);
-    
+
   MisAligner();
 
-  // virtual ~MisAligner();
   virtual ~MisAligner() = default;
 
   //_________________________________________________________________
   // methods
 
   // return a misaligned geometry obtained from the existing one.
-  void MisAlign(bool verbose = false);
+  // void MisAlign(bool verbose = false) const;
+  void MisAlign(std::vector<o2::detectors::AlignParam>& arr, bool verbose = false) const;
 
   /// Set cartesian displacement parameters different along x, y
   void SetCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean = 0., double zwidth = 0.)
@@ -127,7 +131,7 @@ class MisAligner
   MisAligner& operator=(const MisAligner& right);
 
  private:
-  bool isMatrixConvertedToAngles(const double* rot, double& psi, double& theta, double& phi);
+  bool isMatrixConvertedToAngles(const double* rot, double& psi, double& theta, double& phi) const;
   // return a misaligned transformation
   TGeoCombiTrans MisAlignDetElem() const;
   TGeoCombiTrans MisAlignModule() const;
@@ -141,6 +145,8 @@ class MisAligner
 
   double mXYAngMisAligFactor; ///< factor (<1) to apply to angular misalignment range since range of motion is restricted out of the xy plane
   double mZCartMisAligFactor; ///< factor (<1) to apply to cartetian misalignment range since range of motion is restricted in z direction
+
+  ClassDef(MisAligner, 1);
 };
 
 } // namespace geo

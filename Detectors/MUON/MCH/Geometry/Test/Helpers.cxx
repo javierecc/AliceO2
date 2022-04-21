@@ -11,6 +11,7 @@
 
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/MaterialManager.h"
+#include "DetectorsCommonDataFormats/AlignParam.h"
 #include "MCHGeometryCreator/Geometry.h"
 #include "MCHGeometryMisAligner/MisAligner.h"
 #include "MCHGeometryTest/Helpers.h"
@@ -129,31 +130,44 @@ void addAlignableVolumes()
   o2::mch::geo::addAlignableVolumes(*gGeoManager);
 }
 
-/*
 void misAlignGeometry()
 {
-    // create a regular geometry
-    createStandaloneGeometry();
-    if (!gGeoManager) {
-        std::cerr << "gGeoManager == nullptr, must create a geometry first\n";
-        return;
-    }
-    // If not closed, we need to close it
-    if (!gGeoManager->IsClosed()) {
-        gGeoManager->CloseGeometry();
-    }
-    // Then add the alignable volumes
-    addAlignableVolumes();
+  // create a regular geometry
+  createStandaloneGeometry();
+  if (!gGeoManager) {
+    std::cerr << "gGeoManager == nullptr, must create a geometry first\n";
+    return;
+  }
+  // If not closed, we need to close it
+  if (!gGeoManager->IsClosed()) {
+    gGeoManager->CloseGeometry();
+  }
+  // Then add the alignable volumes
+  addAlignableVolumes();
 
-    // The misaligner
-    o2::mch::geo::MisAligner aGMA;
-    aGMA.SetModuleCartMisAlig(0.1, 0., 0.2, 0., 0.3, 0.);
-    // aGMA.SetModuleAngMisAlig(0.1, 0., 0.2, 0., 0.3, 0.);
-    aGMA.SetCartMisAlig(0.1, 0., 0.1, 0., 0.1, 0.);
-    aGMA.SetAngMisAlig(0.1, 0.0);
-    aGMA.MisAlign();
+  std::vector<o2::detectors::AlignParam> params;
+
+  auto transformationB = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+  auto tB = transformationB(100);
+  math_utils::Point3D<double> poB;
+  tB.LocalToMaster(math_utils::Point3D<double>{0, 0, 0}, poB);
+  // The misaligner
+  o2::mch::geo::MisAligner aGMA;
+  aGMA.SetModuleCartMisAlig(0.1, 0., 0.2, 0., 0.3, 0.);
+  aGMA.SetModuleAngMisAlig(0.0, 0., 0., 0., 0., 0.);
+  aGMA.SetCartMisAlig(0.01, 0., 0.02, 0., 0.03, 0.);
+  aGMA.SetAngMisAlig(0.0, 0.0, 0., 0., 0., 0.);
+  // aGMA.MisAlign();
+  aGMA.MisAlign(params);
+
+  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+  auto t = transformation(100);
+  math_utils::Point3D<double> po;
+  t.LocalToMaster(math_utils::Point3D<double>{0, 0, 0}, po);
+  LOG(INFO) << "0,0,0 for DE100";
+  LOG(INFO) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", poB.X(), poB.Y(), poB.Z());
+  LOG(INFO) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", po.X(), po.Y(), po.Z());
 }
- */
 
 void setVolumeVisibility(const char* pattern, bool visible, bool visibleDaughters)
 {

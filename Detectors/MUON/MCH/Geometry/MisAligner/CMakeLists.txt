@@ -18,4 +18,5 @@ o2_add_library(MCHGeometryMisAligner
 o2_target_root_dictionary(
   MCHGeometryMisAligner
   HEADERS include/MCHGeometryMisAligner/MisAligner.h
+  LINKDEF src/MCHGeometryMisAlignerLinkDef.h
 )

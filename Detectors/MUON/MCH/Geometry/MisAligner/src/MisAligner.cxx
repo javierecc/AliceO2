@@ -70,7 +70,7 @@ ClassImp(o2::mch::geo::MisAligner);
 namespace o2::mch::geo
 {
 
-bool MisAligner::isMatrixConvertedToAngles(const double* rot, double& psi, double& theta, double& phi)
+bool MisAligner::isMatrixConvertedToAngles(const double* rot, double& psi, double& theta, double& phi) const
 {
   /// Calculates the Euler angles in "x y z" notation
   /// using the rotation matrix
@@ -88,10 +88,7 @@ bool MisAligner::isMatrixConvertedToAngles(const double* rot, double& psi, doubl
 }
 //______________________________________________________________________________
 MisAligner::MisAligner(double cartXMisAligM, double cartXMisAligW, double cartYMisAligM, double cartYMisAligW, double angMisAligM, double angMisAligW)
-  : mUseUni(kFALSE),
-    mUseGaus(kTRUE),
-    mXYAngMisAligFactor(0.0),
-    mZCartMisAligFactor(0.0)
+  : TObject(), mUseUni(kFALSE), mUseGaus(kTRUE), mXYAngMisAligFactor(0.0), mZCartMisAligFactor(0.0)
 {
   /// Standard constructor
   for (int i = 0; i < 6; i++) {
@@ -110,10 +107,7 @@ MisAligner::MisAligner(double cartXMisAligM, double cartXMisAligW, double cartYM
 
 //______________________________________________________________________________
 MisAligner::MisAligner(double cartMisAligM, double cartMisAligW, double angMisAligM, double angMisAligW)
-  : mUseUni(kFALSE),
-    mUseGaus(kTRUE),
-    mXYAngMisAligFactor(0.0),
-    mZCartMisAligFactor(0.0)
+  : TObject(), mUseUni(kFALSE), mUseGaus(kTRUE), mXYAngMisAligFactor(0.0), mZCartMisAligFactor(0.0)
 {
   /// Standard constructor
   for (int i = 0; i < 6; i++) {
@@ -132,7 +126,8 @@ MisAligner::MisAligner(double cartMisAligM, double cartMisAligW, double angMisAl
 
 //______________________________________________________________________________
 MisAligner::MisAligner(double cartMisAlig, double angMisAlig)
-  : mUseUni(kTRUE),
+  : TObject(),
+    mUseUni(kTRUE),
     mUseGaus(kFALSE),
     mXYAngMisAligFactor(0.0),
     mZCartMisAligFactor(0.0)
@@ -151,7 +146,8 @@ MisAligner::MisAligner(double cartMisAlig, double angMisAlig)
 
 //_____________________________________________________________________________
 MisAligner::MisAligner()
-  : mUseUni(kTRUE),
+  : TObject(),
+    mUseUni(kTRUE),
     mUseGaus(kFALSE),
     mXYAngMisAligFactor(0.0),
     mZCartMisAligFactor(0.0)
@@ -323,7 +319,8 @@ TGeoCombiTrans MisAligner::MisAlignModule() const
 }
 
 //______________________________________________________________________
-void MisAligner::MisAlign(Bool_t verbose)
+// void MisAligner::MisAlign(Bool_t verbose) const
+void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t verbose) const
 {
   /// Takes the internal geometry module transformers, copies them to
   /// new geometry module transformers.
@@ -368,7 +365,7 @@ void MisAligner::MisAlign(Bool_t verbose)
                                        {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1020, 1021, 1022, 1023, 1024, 1025},
                                        {1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019}};
 
-  std::vector<o2::detectors::AlignParam> params;
+  // std::vector<o2::detectors::AlignParam> params;
 
   o2::detectors::AlignParam lAP;
   for (int hc = 0; hc < 20; hc++) { // module transformers
@@ -390,20 +387,21 @@ void MisAligner::MisAlign(Bool_t verbose)
     LOG(INFO) << "symName is " << sname.c_str();
     // newModuleTransformer->SetTransformation(newModuleTransform);
     lAP.setSymName(sname.c_str());
-    LOG(DEBUG) << "local delta params";
+    LOG(INFO) << "local delta params";
     double lPsi, lTheta, lPhi = 0.;
     if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(), lPsi, lTheta, lPhi)) {
       LOG(ERROR) << "Problem extracting angles!";
     }
-    LOG(DEBUG) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
-                              localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
+    LOG(INFO) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
+                             localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
     if (!lAP.setLocalParams(localDeltaTransform)) {
       LOG(ERROR) << "Could not set local params for " << sname.c_str();
     }
-    LOG(DEBUG) << "global delta params";
-    LOG(DEBUG) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
-                              lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
-    // lAP.Print();
+    LOG(INFO) << "global delta params";
+    LOG(INFO) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
+                             lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
+    // lAP.print();
+    // lAP.applyToGeometry();
     params.emplace_back(lAP);
     for (int de = 0; de < DEofHC[hc].size(); de++) {
       LOG(INFO) << "  Will MisAlignDetElem " << DEofHC[hc][de];
@@ -412,19 +410,20 @@ void MisAligner::MisAlign(Bool_t verbose)
       sname = fmt::format("MCH/HC{}/DE{}", hc, DEofHC[hc][de]);
       LOG(INFO) << "  symName is " << sname.c_str();
       lAP.setSymName(sname.c_str());
-      LOG(DEBUG) << "  local delta params";
+      LOG(INFO) << "  local delta params";
       if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(), lPsi, lTheta, lPhi)) {
         LOG(ERROR) << "Problem extracting angles!";
       }
-      LOG(DEBUG) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
-                                localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
+      LOG(INFO) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
+                               localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
       if (!lAP.setLocalParams(localDeltaTransform)) {
         LOG(ERROR) << "  Could not set local params for " << sname.c_str();
       }
-      LOG(DEBUG) << "  global delta params";
-      LOG(DEBUG) << fmt::format("  {} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
-                                lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
+      LOG(INFO) << "  global delta params";
+      LOG(INFO) << fmt::format("  {} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
+                               lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
       params.emplace_back(lAP);
+      // lAP.applyToGeometry();
     }
     /*
     const std::string& ccdbHost = "http://localhost:8080";
