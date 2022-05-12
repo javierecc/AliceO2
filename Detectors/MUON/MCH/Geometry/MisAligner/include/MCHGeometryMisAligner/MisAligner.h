@@ -10,7 +10,7 @@
 
 /** @file MisAligner.h
  * Generate misalignments.
- * @author Javier Castillo Castellanos
+ * @author Javier Castillo Castellanos, Aude Glaenzer
  */
 
 #ifndef O2_MCH_GEOMETRY_MIS_ALIGNER
@@ -46,12 +46,12 @@ class MisAligner : public TObject
   //_________________________________________________________________
   // methods
 
-  // return a misaligned geometry obtained from the existing one.
+  // misaligns the geometry and fills an array of misalignment paramaters.
   // void MisAlign(bool verbose = false) const;
-  void MisAlign(std::vector<o2::detectors::AlignParam>& arr, bool verbose = false) const;
+  void misAlign(std::vector<o2::detectors::AlignParam>& arr, bool verbose = false) const;
 
   /// Set cartesian displacement parameters different along x, y
-  void SetCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean = 0., double zwidth = 0.)
+  void setCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean = 0., double zwidth = 0.)
   {
     mDetElemMisAlig[0][0] = xmean;
     mDetElemMisAlig[0][1] = xwidth;
@@ -62,7 +62,7 @@ class MisAligner : public TObject
   }
 
   /// Set cartesian displacement parameters, the same along x, y
-  void SetCartMisAlig(double mean, double width)
+  void setCartMisAlig(double mean, double width)
   {
     mDetElemMisAlig[0][0] = mean;
     mDetElemMisAlig[0][1] = width;
@@ -71,7 +71,7 @@ class MisAligner : public TObject
   }
 
   /// Set angular displacement
-  void SetAngMisAlig(double zmean, double zwidth, double xmean = 0., double xwidth = 0., double ymean = 0., double ywidth = 0.)
+  void setAngMisAlig(double zmean, double zwidth, double xmean = 0., double xwidth = 0., double ymean = 0., double ywidth = 0.)
   {
     mDetElemMisAlig[3][0] = xmean;
     mDetElemMisAlig[3][1] = xwidth;
@@ -81,26 +81,26 @@ class MisAligner : public TObject
     mDetElemMisAlig[5][1] = zwidth;
   }
 
-  void SetXYAngMisAligFactor(double factor);
+  void setXYAngMisAligFactor(double factor);
 
-  void SetZCartMisAligFactor(double factor);
+  void setZCartMisAligFactor(double factor);
 
   /// Set option for gaussian distribution
-  void SetUseGaus(bool usegaus)
+  void setUseGaus(bool usegaus)
   {
     mUseGaus = usegaus;
     mUseUni = !usegaus;
   }
 
   /// Set option for uniform distribution
-  void SetUseUni(bool useuni)
+  void setUseUni(bool useuni)
   {
     mUseGaus = !useuni;
     mUseUni = useuni;
   }
 
   /// Set module (half chambers) cartesian displacement parameters
-  void SetModuleCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
+  void setModuleCartMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
   {
     mModuleMisAlig[0][0] = xmean;
     mModuleMisAlig[0][1] = xwidth;
@@ -111,7 +111,7 @@ class MisAligner : public TObject
   }
 
   /// Set module (half chambers) cartesian displacement parameters
-  void SetModuleAngMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
+  void setModuleAngMisAlig(double xmean, double xwidth, double ymean, double ywidth, double zmean, double zwidth)
   {
     mModuleMisAlig[3][0] = xmean;
     mModuleMisAlig[3][1] = xwidth;
@@ -122,7 +122,7 @@ class MisAligner : public TObject
   }
 
   /// Set alignment resolution to misalign objects to be stored in CDB
-  void SetAlignmentResolution(const TClonesArray* misAlignArray, int chId = -1, double chResX = -1., double chResY = -1., double deResX = -1., double deResY = -1.);
+  void setAlignmentResolution(const TClonesArray* misAlignArray, int chId = -1, double chResX = -1., double chResY = -1., double deResX = -1., double deResY = -1.);
 
  protected:
   /// Not implemented
@@ -133,10 +133,10 @@ class MisAligner : public TObject
  private:
   bool isMatrixConvertedToAngles(const double* rot, double& psi, double& theta, double& phi) const;
   // return a misaligned transformation
-  TGeoCombiTrans MisAlignDetElem() const;
-  TGeoCombiTrans MisAlignModule() const;
-  void GetUniMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const;
-  void GetGausMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const;
+  TGeoCombiTrans misAlignDetElem() const;
+  TGeoCombiTrans misAlignModule() const;
+  void getUniMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const;
+  void getGausMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const;
 
   bool mUseUni;                 ///< use uniform distribution for misaligmnets
   bool mUseGaus;                ///< use gaussian distribution for misaligmnets

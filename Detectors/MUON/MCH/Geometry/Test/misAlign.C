@@ -58,17 +58,17 @@ void misAlign(Double_t xcartmisaligm = 0.01, Double_t xcartmisaligw = 0.0,
   // aGMA.SetAngMisAlig(angmisaligm, angmisaligw);
 
   // To generate module mislaignment (not mandatory)
-  aGMA.SetModuleCartMisAlig(0.1, 0.0, 0.2, 0.0, 0.3, 0.0);
-  aGMA.SetModuleAngMisAlig(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  aGMA.setModuleCartMisAlig(0.1, 0.0, 0.2, 0.0, 0.3, 0.0);
+  aGMA.setModuleAngMisAlig(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
-  aGMA.MisAlign(params);
+  aGMA.misAlign(params);
 
-  auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
-  auto t = transformation(100);
-  math_utils::Point3D<double> po;
-  t.LocalToMaster(math_utils::Point3D<double>{0, 0, 0}, po);
-  LOG(INFO) << "0,0,0 for DE100";
-  LOG(INFO) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", po.X(), po.Y(), po.Z());
+  // auto transformation = o2::mch::geo::transformationFromTGeoManager(*gGeoManager);
+  // auto t = transformation(100);
+  // o2::math_utils::Point3D<double> po;
+  // t.LocalToMaster(o2::math_utils::Point3D<double>{0, 0, 0}, po);
+  // LOG(INFO) << "0,0,0 for DE100";
+  // LOG(INFO) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", po.X(), po.Y(), po.Z());
   /*
    // A faire plus tard, pris de la macro dans AliRoot
   // Generate misaligned data in local cdb

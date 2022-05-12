@@ -19,7 +19,9 @@
 
 #pragma link C++ class o2::mch::test::Dummy;
 
+#pragma link C++ function o2::mch::test::zeroMisAlignGeometry;
 #pragma link C++ function o2::mch::test::misAlignGeometry;
+#pragma link C++ function o2::mch::test::misAlignGeometryPlus;
 #pragma link C++ function o2::mch::test::createStandaloneGeometry;
 #pragma link C++ function o2::mch::test::createRegularGeometry;
 #pragma link C++ function o2::mch::test::drawGeometry;

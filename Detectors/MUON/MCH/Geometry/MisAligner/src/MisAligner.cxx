@@ -147,8 +147,8 @@ MisAligner::MisAligner(double cartMisAlig, double angMisAlig)
 //_____________________________________________________________________________
 MisAligner::MisAligner()
   : TObject(),
-    mUseUni(kTRUE),
-    mUseGaus(kFALSE),
+    mUseUni(kFALSE),
+    mUseGaus(kTRUE),
     mXYAngMisAligFactor(0.0),
     mZCartMisAligFactor(0.0)
 {
@@ -170,7 +170,7 @@ MisAligner::~MisAligner()
  */
 
 //_________________________________________________________________________
-void MisAligner::SetXYAngMisAligFactor(double factor)
+void MisAligner::setXYAngMisAligFactor(double factor)
 {
   /// Set XY angular misalign factor
 
@@ -186,7 +186,7 @@ void MisAligner::SetXYAngMisAligFactor(double factor)
 }
 
 //_________________________________________________________________________
-void MisAligner::SetZCartMisAligFactor(double factor)
+void MisAligner::setZCartMisAligFactor(double factor)
 {
   /// Set XY angular misalign factor
   if (TMath::Abs(factor) < 1.0 && factor > 0.) {
@@ -199,7 +199,7 @@ void MisAligner::SetZCartMisAligFactor(double factor)
 }
 
 //_________________________________________________________________________
-void MisAligner::GetUniMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const
+void MisAligner::getUniMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const
 {
   /// Misalign using uniform distribution
   /**
@@ -221,7 +221,7 @@ void MisAligner::GetUniMisAlign(double cartMisAlig[3], double angMisAlig[3], con
 }
 
 //_________________________________________________________________________
-void MisAligner::GetGausMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const
+void MisAligner::getGausMisAlign(double cartMisAlig[3], double angMisAlig[3], const double lParMisAlig[6][2]) const
 {
   /// Misalign using gaussian distribution
   /**
@@ -243,7 +243,7 @@ void MisAligner::GetGausMisAlign(double cartMisAlig[3], double angMisAlig[3], co
 }
 
 //_________________________________________________________________________
-TGeoCombiTrans MisAligner::MisAlignDetElem() const
+TGeoCombiTrans MisAligner::misAlignDetElem() const
 {
   /// Misalign given transformation and return the misaligned transformation.
   /// Use misalignment parameters for detection elements.
@@ -258,12 +258,12 @@ TGeoCombiTrans MisAligner::MisAlignDetElem() const
   double angMisAlig[3] = {0, 0, 0};
 
   if (mUseUni) {
-    GetUniMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
+    getUniMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
   } else {
     if (!mUseGaus) {
       LOG(WARN) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
     }
-    GetGausMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
+    getGausMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
   }
 
   TGeoTranslation deltaTrans(cartMisAlig[0], cartMisAlig[1], cartMisAlig[2]);
@@ -281,7 +281,7 @@ TGeoCombiTrans MisAligner::MisAlignDetElem() const
 }
 
 //_________________________________________________________________________
-TGeoCombiTrans MisAligner::MisAlignModule() const
+TGeoCombiTrans MisAligner::misAlignModule() const
 {
   /// Misalign given transformation and return the misaligned transformation.
   /// Use misalignment parameters for modules.
@@ -296,12 +296,12 @@ TGeoCombiTrans MisAligner::MisAlignModule() const
   double angMisAlig[3] = {0, 0, 0};
 
   if (mUseUni) {
-    GetUniMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
+    getUniMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
   } else {
     if (!mUseGaus) {
       LOG(WARN) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
     }
-    GetGausMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
+    getGausMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
   }
 
   TGeoTranslation deltaTrans(cartMisAlig[0], cartMisAlig[1], cartMisAlig[2]);
@@ -320,7 +320,7 @@ TGeoCombiTrans MisAligner::MisAlignModule() const
 
 //______________________________________________________________________
 // void MisAligner::MisAlign(Bool_t verbose) const
-void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t verbose) const
+void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t verbose) const
 {
   /// Takes the internal geometry module transformers, copies them to
   /// new geometry module transformers.
@@ -380,7 +380,7 @@ void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
     //   TGeoCombiTrans(*kModuleTransformer->GetTransformation());
     // New module transformation
     LOG(INFO) << "Will MisAlignModule " << hc;
-    TGeoCombiTrans localDeltaTransform = MisAlignModule();
+    TGeoCombiTrans localDeltaTransform = misAlignModule();
 
     // localDeltaTransform.Print();
     std::string sname = fmt::format("MCH/HC{}", hc);
@@ -401,11 +401,11 @@ void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
     LOG(INFO) << fmt::format("{} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
                              lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
     // lAP.print();
-    // lAP.applyToGeometry();
+    lAP.applyToGeometry();
     params.emplace_back(lAP);
     for (int de = 0; de < DEofHC[hc].size(); de++) {
       LOG(INFO) << "  Will MisAlignDetElem " << DEofHC[hc][de];
-      localDeltaTransform = MisAlignDetElem();
+      localDeltaTransform = misAlignDetElem();
 
       sname = fmt::format("MCH/HC{}/DE{}", hc, DEofHC[hc][de]);
       LOG(INFO) << "  symName is " << sname.c_str();
@@ -423,7 +423,7 @@ void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
       LOG(INFO) << fmt::format("  {} : {} | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
                                lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
       params.emplace_back(lAP);
-      // lAP.applyToGeometry();
+      lAP.applyToGeometry();
     }
     /*
     const std::string& ccdbHost = "http://localhost:8080";
@@ -512,7 +512,7 @@ void MisAligner::MisAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
   // return newGeometryTransformer;
 }
 
-void MisAligner::SetAlignmentResolution(const TClonesArray* misAlignArray, int rChId, double rChResX, double rChResY, double rDeResX, double rDeResY)
+void MisAligner::setAlignmentResolution(const TClonesArray* misAlignArray, int rChId, double rChResX, double rChResY, double rDeResX, double rDeResY)
 {
 }
 
