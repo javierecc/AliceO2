@@ -11,6 +11,7 @@
 
 #include "MCHGeometryTransformer/Transformations.h"
 #include "MCHGeometryTransformer/VolumePaths.h"
+
 #include <array>
 #include <string>
 #include <vector>
@@ -19,6 +20,7 @@
 #include <rapidjson/document.h>
 #include <rapidjson/istreamwrapper.h>
 #include <fmt/format.h>
+
 namespace o2::mch::geo
 {
 
