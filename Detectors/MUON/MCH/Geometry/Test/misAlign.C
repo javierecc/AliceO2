@@ -67,8 +67,8 @@ void misAlign(Double_t xcartmisaligm = 0.01, Double_t xcartmisaligw = 0.0,
   // auto t = transformation(100);
   // o2::math_utils::Point3D<double> po;
   // t.LocalToMaster(o2::math_utils::Point3D<double>{0, 0, 0}, po);
-  // LOG(INFO) << "0,0,0 for DE100";
-  // LOG(INFO) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", po.X(), po.Y(), po.Z());
+  // LOG(info) << "0,0,0 for DE100";
+  // LOG(info) << fmt::format("X: {:+f} Y: {:+f} Z: {:+f}\n", po.X(), po.Y(), po.Z());
   /*
    // A faire plus tard, pris de la macro dans AliRoot
   // Generate misaligned data in local cdb

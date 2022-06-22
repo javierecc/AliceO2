@@ -64,7 +64,7 @@ bool MisAligner::isMatrixConvertedToAngles(const double* rot, double& psi, doubl
   /// extracted from the matrix
   //
   if (std::abs(rot[0]) < 1e-7 || std::abs(rot[8]) < 1e-7) {
-    LOG(ERROR) << "Failed to extract roll-pitch-yall angles!";
+    LOG(error) << "Failed to extract roll-pitch-yall angles!";
     return false;
   }
   psi = std::atan2(-rot[5], rot[8]);
@@ -167,7 +167,7 @@ void MisAligner::setXYAngMisAligFactor(double factor)
     mDetElemMisAlig[4][0] = mDetElemMisAlig[5][0] * factor; // backward
     mDetElemMisAlig[4][1] = mDetElemMisAlig[5][1] * factor; // compatibility
   } else {
-    LOG(ERROR) << "Invalid XY angular misalign factor, " << factor;
+    LOG(error) << "Invalid XY angular misalign factor, " << factor;
   }
 }
 
@@ -180,7 +180,7 @@ void MisAligner::setZCartMisAligFactor(double factor)
     mDetElemMisAlig[2][0] = mDetElemMisAlig[0][0];          // These lines were added to
     mDetElemMisAlig[2][1] = mDetElemMisAlig[0][1] * factor; // keep backward compatibility
   } else {
-    LOG(ERROR) << Form("Invalid Z cartesian misalign factor, %f", factor);
+    LOG(error) << Form("Invalid Z cartesian misalign factor, %f", factor);
   }
 }
 
@@ -244,7 +244,7 @@ TGeoCombiTrans MisAligner::misAlignDetElem() const
     getUniMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
   } else {
     if (!mUseGaus) {
-      LOG(WARN) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
+      LOG(warn) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
     }
     getGausMisAlign(cartMisAlig, angMisAlig, mDetElemMisAlig);
   }
@@ -257,7 +257,7 @@ TGeoCombiTrans MisAligner::misAlignDetElem() const
 
   TGeoCombiTrans deltaTransf(deltaTrans, deltaRot);
 
-  LOG(INFO) << Form("Rotated DE by %f about Z axis.", angMisAlig[2]);
+  LOG(info) << Form("Rotated DE by %f about Z axis.", angMisAlig[2]);
 
   return TGeoCombiTrans(deltaTransf);
 }
@@ -277,7 +277,7 @@ TGeoCombiTrans MisAligner::misAlignModule() const
     getUniMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
   } else {
     if (!mUseGaus) {
-      LOG(WARN) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
+      LOG(warn) << Form("Neither uniform nor gausian distribution is set! Will use gausian...");
     }
     getGausMisAlign(cartMisAlig, angMisAlig, mModuleMisAlig);
   }
@@ -290,7 +290,7 @@ TGeoCombiTrans MisAligner::misAlignModule() const
 
   TGeoCombiTrans deltaTransf(deltaTrans, deltaRot);
 
-  LOG(INFO) << Form("Rotated Module by %f about Z axis.", angMisAlig[2]);
+  LOG(info) << Form("Rotated Module by %f about Z axis.", angMisAlig[2]);
 
   return TGeoCombiTrans(deltaTransf);
 }
@@ -336,15 +336,15 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
 
     double lPsi, lTheta, lPhi = 0.;
     if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(), lPsi, lTheta, lPhi)) {
-      LOG(ERROR) << "Problem extracting angles!";
+      LOG(error) << "Problem extracting angles!";
     }
 
-    LOG(DEBUG) << fmt::format("Module {} is {} : {} : Local Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", hc, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
+    LOG(debug) << fmt::format("Module {} is {} : {} : Local Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", hc, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
                               localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
     if (!lAP.setLocalParams(localDeltaTransform)) {
-      LOG(ERROR) << "Could not set local params for " << sname.c_str();
+      LOG(error) << "Could not set local params for " << sname.c_str();
     }
-    LOG(DEBUG) << fmt::format("Module {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", hc, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
+    LOG(debug) << fmt::format("Module {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", hc, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
                               lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
     // lAP.print();
     lAP.applyToGeometry();
@@ -357,21 +357,21 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
       lAP.setSymName(sname.c_str());
 
       if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(), lPsi, lTheta, lPhi)) {
-        LOG(ERROR) << "Problem extracting angles for " << sname.c_str();
+        LOG(error) << "Problem extracting angles for " << sname.c_str();
       }
-      LOG(DEBUG) << fmt::format("DetElem {} is {} : {} : Local Delta| X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
+      LOG(debug) << fmt::format("DetElem {} is {} : {} : Local Delta| X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
                                 localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
       if (!lAP.setLocalParams(localDeltaTransform)) {
-        LOG(ERROR) << "  Could not set local params for " << sname.c_str();
+        LOG(error) << "  Could not set local params for " << sname.c_str();
       }
-      LOG(DEBUG) << fmt::format("DetElem {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
+      LOG(debug) << fmt::format("DetElem {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
                                 lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
       lAP.applyToGeometry();
       params.emplace_back(lAP);
     }
 
     if (verbose) {
-      LOG(INFO) << "MisAligned half chamber " << hc;
+      LOG(info) << "MisAligned half chamber " << hc;
     }
   }
 }
