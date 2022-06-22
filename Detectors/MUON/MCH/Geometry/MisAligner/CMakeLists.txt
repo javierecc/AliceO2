@@ -9,8 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2_add_library(MCHGeometryMisAligner  
-               SOURCES src/MisAligner.cxx 
+o2_add_library(MCHGeometryMisAligner
+               SOURCES src/MisAligner.cxx
                PUBLIC_LINK_LIBRARIES O2::FrameworkLogger
                O2::DetectorsCommonDataFormats)
 
