@@ -26,6 +26,41 @@ namespace o2::mch::geo
 
 std::array<int, 156> allDeIds = o2::mch::constants::deIdsForAllMCH;
 
+TransformationCreator transformationModuleFromTGeoManager(const TGeoManager& geo)
+{
+  return [&geo](int halfCh) -> o2::math_utils::Transform3D {
+    if (halfCh < 0 || halfCh > 19) {
+      throw std::runtime_error("Wrong detection element Id");
+    }
+
+    std::string volPathName = geo.GetTopVolume()->GetName();
+
+    int detElemId = (halfCh / 2 + 1) * 100 + (halfCh % 2 ? 0 : (halfCh < 8 ? 1 : 9));
+
+    int nCh = detElemId / 100;
+
+    if (nCh <= 4 && geo.GetVolume("YOUT1")) {
+      volPathName += "/YOUT1_1/";
+    } else if ((nCh == 5 || nCh == 6) && geo.GetVolume("DDIP")) {
+      volPathName += "/DDIP_1/";
+    } else if (nCh >= 7 && geo.GetVolume("YOUT2")) {
+      volPathName += "/YOUT2_1/";
+    } else {
+      volPathName += "/";
+    }
+
+    volPathName += volumePathName(detElemId).substr(0, volumePathName(detElemId).find("/"));
+
+    TGeoNavigator* navig = gGeoManager->GetCurrentNavigator();
+
+    if (!navig->cd(volPathName.c_str())) {
+      throw std::runtime_error("could not get to volPathName=" + volPathName);
+    }
+
+    return o2::math_utils::Transform3D{*(navig->GetCurrentMatrix())};
+  };
+}
+
 TransformationCreator transformationFromTGeoManager(const TGeoManager& geo)
 {
   return [&geo](int detElemId) -> o2::math_utils::Transform3D {
