@@ -172,6 +172,7 @@ class AlignmentTask
         const auto grp = parameters::GRPObject::loadFrom(grpFile);
         base::Propagator::initFieldFromGRP(grp);
         TrackExtrap::setField();
+        LOG(info) << "Setting BFieldOn to " << TrackExtrap::isFieldON();
         mAlign.SetBFieldOn(TrackExtrap::isFieldON());
         TrackExtrap::useExtrapV2();
       } else {
@@ -270,6 +271,17 @@ class AlignmentTask
       }
     }
 
+    // Configuration for detection element fixing
+    auto input_fixdetelem = ic.options().get<string>("fix-detection-element");
+    std::stringstream string_dets(input_fixdetelem);
+    string_dets >> std::ws;
+    while (string_dets.good()) {
+      string substr;
+      std::getline(string_dets, substr, ',');
+      LOG(info) << Form("%s%d", "Fixing detection element: ", std::stoi(substr));
+      mAlign.FixDetElem(std::stoi(substr), 4);
+    }
+
     doMatched = ic.options().get<bool>("matched");
     outFileName = ic.options().get<string>("output");
     readFromRec = ic.options().get<bool>("use-record");
@@ -280,8 +292,16 @@ class AlignmentTask
     }
     mAlign.init();
 
+    // mAlign.SetInitPar(67, -2.0);  // DE 500 z
+    // mAlign.SetInitPar(103, -2.0); // DE 509 z
+    // mAlign.SetInitPar(139, -4.0); // DE 600 z
+    // mAlign.SetInitPar(175, -2.5); // DE 609 z
+
     ic.services().get<CallbackService>().set<CallbackService::Id::Stop>([this]() {
       LOG(info) << "Alignment duration = " << mElapsedTime.count() << " s";
+      LOG(info) << "Total number of loaded tracks: " << track_count1;
+      LOG(info) << "Total number of tracks with >=10 clusters: " << track_count2;
+      LOG(info) << "Total number of tracks after refit: " << track_count3;
     });
   }
 
@@ -321,24 +341,28 @@ class AlignmentTask
         if (!FindMuon(iMCHTrack, muonTracks)) {
           continue;
         }
-
+        track_count1++;
         auto mchTrack = mchTracks.at(iMCHTrack);
         int id_track = iMCHTrack;
         int nb_clusters = mchTrack.getNClusters();
 
         // Track selection, considering only tracks having at least 10 clusters
-        if (nb_clusters <= 9) {
+        if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
+          continue;
+        }
+        track_count2++;
+        // Format conversion from TrackMCH to Track(MCH internal use)
+        if (!GoodTrack(mchTrack)) {
           continue;
         }
 
-        // Format conversion from TrackMCH to Track(MCH internal use)
-        mch::Track convertedTrack = MCHFormatConvert(mchTrack, mchClusters, doReAlign);
+        Track convertedTrack = MCHFormatConvert(mchTrack, mchClusters, doReAlign);
 
         // Erase removable track
         if (RemoveTrack(convertedTrack)) {
           continue;
         }
-
+        track_count3++;
         //  Track processing, saving residuals
         mAlign.ProcessTrack(convertedTrack, transformation, doAlign, weightRecord);
       }
@@ -358,12 +382,17 @@ class AlignmentTask
         auto mchTrack = mchTracks.at(iMCHTrack);
         int id_track = iMCHTrack;
         int nb_clusters = mchTrack.getNClusters();
-
+        track_count1++;
         // Track selection, saving only tracks having exactly 10 clusters
-        if (nb_clusters <= 9) {
+        // if (nb_clusters <= 9) {
+        if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
           continue;
         }
+        track_count2++;
 
+        if (!GoodTrack(mchTrack)) {
+          continue;
+        }
         // Format conversion from TrackMCH to Track(MCH internal use)
         Track convertedTrack = MCHFormatConvert(mchTrack, mchClusters, doReAlign);
 
@@ -371,9 +400,10 @@ class AlignmentTask
         if (RemoveTrack(convertedTrack)) {
           continue;
         }
+        track_count3++;
 
         //  Track processing, saving residuals
-        mAlign.ProcessTrack(convertedTrack, transformation, doAlign, weightRecord);
+        mAlign.ProcessTrack(convertedTrack, transformation, weightRecord);
       }
     }
   }
@@ -497,7 +527,11 @@ class AlignmentTask
         TGeoHMatrix delta_track;
         TGeoRotation r("Rotation/Track", param_Track.getPsi() / pi() * 180.0, param_Track.getTheta() / pi() * 180.0, param_Track.getPhi() / pi() * 180.0);
         delta_track.SetRotation(r.GetRotationMatrix());
+        // if (hc != 19) {
         delta_track.SetDx(param_Track.getX());
+        // } else {
+        //   delta_track.SetDx(param_Track.getX() + 4.7);
+        // }
         delta_track.SetDy(param_Track.getY());
         delta_track.SetDz(param_Track.getZ());
 
@@ -632,6 +666,61 @@ class AlignmentTask
     return removeTrack;
   }
 
+  bool GoodTrack(TrackMCH& track)
+  {
+    /// apply standard track selections + pDCA
+
+    static const double sigmaPDCA23 = 80.;
+    static const double sigmaPDCA310 = 54.;
+    static const double nSigmaPDCA = 6.;
+    static const double relPRes = 0.0004;
+    static const double slopeRes = 0.0005;
+
+    // Rabs (absorber cuts)
+    o2::mch::TrackParam trackParamAtRabs(track.getZ(), track.getParameters());
+    o2::mch::TrackExtrap::extrapToZ(trackParamAtRabs, -505.);
+    double xAbs = trackParamAtRabs.getNonBendingCoor();
+    double yAbs = trackParamAtRabs.getBendingCoor();
+    double rAbs = sqrt(xAbs * xAbs + yAbs * yAbs);
+    double thetaAbs = TMath::ATan(rAbs / 505.) * TMath::RadToDeg();
+    if (thetaAbs < 2. || thetaAbs > 10.) {
+      if (0)
+        std::cerr << "Track rejected: not in the angular range [2,10] (" << thetaAbs << ") at the end of abs." << std::endl;
+      return false;
+    }
+
+    // Eta at the vertex
+    o2::mch::TrackParam trackParamAtVertex(track.getZ(), track.getParameters());
+    o2::mch::TrackExtrap::extrapToVertex(trackParamAtVertex, 0., 0., 0., 0., 0.);
+    double p = trackParamAtVertex.p();
+    double eta = 0.5 * log((p + trackParamAtVertex.pz()) / (p - trackParamAtVertex.pz()));
+    if (eta < -4. || eta > -2.5) {
+      if (0)
+        std::cerr << "Track rejected: not in the eta range (" << eta << ") at the vertex" << std::endl;
+      return false;
+    }
+
+    // DCA
+    o2::mch::TrackParam trackParamAtDCA(track.getZ(), track.getParameters());
+    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(trackParamAtDCA, 0.);
+    double dcaX = trackParamAtDCA.getNonBendingCoor();
+    double dcaY = trackParamAtDCA.getBendingCoor();
+    double dca = sqrt(dcaX * dcaX + dcaY * dcaY);
+    double pDCA = track.getP() * dca;
+    double sigmaPDCA = (thetaAbs < 3) ? sigmaPDCA23 : sigmaPDCA310;
+    double nrp = nSigmaPDCA * relPRes * p;
+    double pResEffect = sigmaPDCA / (1. - nrp / (1. + nrp));
+    double slopeResEffect = 535. * slopeRes * p;
+    double sigmaPDCAWithRes = TMath::Sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
+    if (pDCA > nSigmaPDCA * sigmaPDCAWithRes) {
+      if (0)
+        std::cerr << "Track rejected: not in the PDCA range (" << pDCA << ")" << std::endl;
+      return false;
+    }
+
+    return true;
+  }
+
   //_________________________________________________________________________________________________
   void drawHisto(std::vector<double>& params, std::vector<double>& errors, std::vector<double>& pulls, string outFileName)
   {
@@ -726,7 +815,7 @@ class AlignmentTask
       switch (i) {
         case 1:
           aHisto->SetYTitle("#delta_{#X} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-5.0, 5.0);
+          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignX->Draw("Psame goff");
           limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
@@ -741,7 +830,7 @@ class AlignmentTask
           break;
         case 2:
           aHisto->SetYTitle("#delta_{#Y} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-1.0, 1.0);
+          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignY->Draw("Psame goff");
           limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
@@ -756,7 +845,7 @@ class AlignmentTask
           break;
         case 3:
           aHisto->SetYTitle("#delta_{#Z} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-5.0, 5.0);
+          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignZ->Draw("Psame goff");
           limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
@@ -771,7 +860,7 @@ class AlignmentTask
           break;
         case 4:
           aHisto->SetYTitle("#delta_{#varphi} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-0.01, 0.01);
+          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignPhi->Draw("Psame goff");
           limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
@@ -893,6 +982,9 @@ class AlignmentTask
   double mImproveCutChi2{};
 
   std::chrono::duration<double> mElapsedTime{};
+  int track_count1{0};
+  int track_count2{0};
+  int track_count3{0};
 };
 
 //_________________________________________________________________________________________________

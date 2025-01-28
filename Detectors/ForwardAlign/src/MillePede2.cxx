@@ -695,7 +695,9 @@ int MillePede2::LocalFit(std::vector<double>& localParams)
 
     lChi2 += weight * resid * resid; // total chi^2
     nEq++;                           // number of equations
-  }                                  // end of Calculate residuals
+  } // end of Calculate residuals
+
+  // LOGF(info, "MillePede2 - building Chi2: (%+e / %+e) / (%d - %d) ", lChi2, gloWgh, nEq, maxLocUsed);
 
   lChi2 /= gloWgh;
   int nDoF = nEq - maxLocUsed;
@@ -711,8 +713,8 @@ int MillePede2::LocalFit(std::vector<double>& localParams)
     if (fLocFitAdd) {
       fNLocFitsRejected++;
     }
-    LOGF(debug, "MillePede2 - reject chi2 %+e record %5ld: (nDOF %d)", lChi2, fCurrRecDataID, nDoF); // A.R. comment
-    // fRecord->Print();                                                                                // A.R. comment
+    LOGF(debug, "MillePede2 - reject chi2 %+e > %+e x %+e record %5ld: (nDOF %d)", lChi2, Chi2DoFLim(fNStdDev, nDoF), fChi2CutFactor, fCurrRecDataID, nDoF); // A.R. comment
+    // fRecord->Print();                                                                               // A.R. comment
     return 0;
   }
 
@@ -903,7 +905,7 @@ int MillePede2::GlobalFit(std::vector<double>& par,
       fChi2CutFactor = TMath::Sqrt(fChi2CutFactor);
       if (fChi2CutFactor < 1.2 * fChi2CutRef) {
         fChi2CutFactor = fChi2CutRef;
-        // fIter = fMaxIter - 1; // RRR // Last iteration
+        fIter = fMaxIter - 1; // RRR // Last iteration
       }
     }
     fIter++;

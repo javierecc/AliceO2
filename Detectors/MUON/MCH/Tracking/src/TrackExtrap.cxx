@@ -47,6 +47,7 @@ void TrackExtrap::setField()
   double b[3] = {0., 0., 0.};
   TGeoGlobalMagField::Instance()->Field(x, b);
   sSimpleBValue = b[0];
+  LOG(info) << "TrackExtrap::setField: Field at (50., 50., " << SSimpleBPosition << " is " << sSimpleBValue;
   sFieldON = (TMath::Abs(sSimpleBValue) > 1.e-10) ? true : false;
   LOG(info) << "Track extrapolation with magnetic field " << (sFieldON ? "ON" : "OFF");
 }

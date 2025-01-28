@@ -131,6 +131,17 @@ class AlignRecordTask
       mAlign.FixChamber(std::stoi(substr));
     }
 
+    // Configuration for detection element fixing
+    auto input_fixdetelem = ic.options().get<string>("fix-detection-element");
+    std::stringstream string_dets(input_fixdetelem);
+    string_dets >> std::ws;
+    while (string_dets.good()) {
+      string substr;
+      std::getline(string_dets, substr, ',');
+      LOG(info) << Form("%s%d", "Fixing detection element: ", std::stoi(substr));
+      mAlign.FixDetElem(std::stoi(substr));
+    }
+
     // Init for output saving
     auto OutputRecFileName = ic.options().get<string>("output-record-data");
     auto OutputConsFileName = ic.options().get<string>("output-record-constraint");
@@ -358,6 +369,7 @@ o2::framework::DataProcessorSpec getAlignRecordSpec(bool useMC, bool disableCCDB
     Options{{"geo-file", VariantType::String, o2::base::NameConf::getAlignedGeomFileName(), {"Name of the reference geometry file"}},
             {"grp-file", VariantType::String, o2::base::NameConf::getGRPFileName(), {"Name of the grp file"}},
             {"fix-chamber", VariantType::String, "", {"Chamber fixing, ex 1,2,3"}},
+            {"fix-detection-element", VariantType::String, "", {"Detection element fixing, ex 517"}},
             {"output-record-data", VariantType::String, "recDataFile.root", {"Option for name of output record file for data"}},
             {"output-record-constraint", VariantType::String, "recConsFile.root", {"Option for name of output record file for constraint"}}}};
 }

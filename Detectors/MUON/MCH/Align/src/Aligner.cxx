@@ -476,7 +476,7 @@ void Aligner::ProcessTrack(Track& track, const o2::mch::geo::TransformationCreat
       fMeas[0] = (r[0] * fClustPos[0] + r[1] * fClustPos[1]);
       fMeas[1] = (r[3] * fClustPos[0] + r[4] * fClustPos[1]);
     }
-    // printf("DE %d, X: %f %f ; Y: %f %f ; Z: %f\n", cluster->getDEId(), fClustPos[0], fTrackPos[0], fClustPos[1], fTrackPos[1], fClustPos[2]);
+    // printf("DE %d, X: %f %f (%f); Y: %f %f (%f); Z: %f\n", cluster->getDEId(), fClustPos[0], fTrackPos[0], fMeas[0], fClustPos[1], fTrackPos[1], fMeas[0], fClustPos[2]);
 
     if (fDoEvaluation) {
 
@@ -610,6 +610,7 @@ void Aligner::FixDetElem(int iDetElemId, unsigned int mask)
 {
   /// fix parameters matching mask, for a given detector element, counting from 0
   const int iDet(GetDetElemNumber(iDetElemId));
+  LOG(info) << "Fixing " << GetParameterMaskString(mask).Data() << " for detector element " << iDetElemId;
   if (mask & ParX) {
     FixParameter(iDet, 0);
   }
@@ -1378,6 +1379,10 @@ void Aligner::ReAlign(
 
         sname = fmt::format("MCH/HC{}/DE{}", hc, fgDetElemHalfCh[hc][de]);
         lAP.setSymName(sname.c_str());
+        // if (hc == 19) {
+        //   lDetElemMisAlignment[0] += 4.7;
+        // }
+
         localDeltaTransform = DeltaTransform(lDetElemMisAlignment);
 
         if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(),

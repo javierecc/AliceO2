@@ -232,6 +232,12 @@ class Aligner : public TObject
     FixParameter(iDetElem * fgNParCh + iPar);
   }
 
+  void SetInitPar(int iPar, double Par)
+  {
+    std::cout << "Setting initial value for global parameter " << iPar << " with value " << Par << std::endl;
+    fMillepede->SetInitPar(iPar, Par);
+  }
+
   //@}
 
   //@name releasing detectors
