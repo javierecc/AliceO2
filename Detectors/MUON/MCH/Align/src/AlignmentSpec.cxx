@@ -151,9 +151,11 @@ class AlignmentTask
     errors = std::vector<double>(numberOfGlobalParam, default_value);
     pulls = std::vector<double>(numberOfGlobalParam, default_value);
 
+    doRecord = ic.options().get<bool>("do-record");
     doAlign = ic.options().get<bool>("do-align");
     if (doAlign) {
-      LOG(info) << "Alignment mode";
+      LOG(info)
+        << "Alignment mode";
     } else {
       LOG(info) << "No alignment mode, only residuals will be stored";
     }
@@ -271,17 +273,6 @@ class AlignmentTask
       }
     }
 
-    // Configuration for detection element fixing
-    auto input_fixdetelem = ic.options().get<string>("fix-detection-element");
-    std::stringstream string_dets(input_fixdetelem);
-    string_dets >> std::ws;
-    while (string_dets.good()) {
-      string substr;
-      std::getline(string_dets, substr, ',');
-      LOG(info) << Form("%s%d", "Fixing detection element: ", std::stoi(substr));
-      mAlign.FixDetElem(std::stoi(substr), 4);
-    }
-
     doMatched = ic.options().get<bool>("matched");
     outFileName = ic.options().get<string>("output");
     readFromRec = ic.options().get<bool>("use-record");
@@ -347,6 +338,7 @@ class AlignmentTask
         int nb_clusters = mchTrack.getNClusters();
 
         // Track selection, considering only tracks having at least 10 clusters
+        // if (nb_clusters <= 9) {
         if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
           continue;
         }
@@ -364,7 +356,7 @@ class AlignmentTask
         }
         track_count3++;
         //  Track processing, saving residuals
-        mAlign.ProcessTrack(convertedTrack, transformation, doAlign, weightRecord);
+        mAlign.ProcessTrack(convertedTrack, transformation, doRecord, weightRecord);
       }
     }
   }
@@ -372,17 +364,22 @@ class AlignmentTask
   //_________________________________________________________________________________________________
   void processWithOutMatching(vector<ROFRecord>& mchROFs, vector<TrackMCH>& mchTracks, vector<Cluster>& mchClusters)
   {
+    // LOG(info) << "Starting processWithOutMatching";
 
     // processing for each track
     for (const auto& mchROF : mchROFs) {
+      // LOG(info) << "Loop ROF";
 
       for (int iMCHTrack = mchROF.getFirstIdx();
            iMCHTrack <= mchROF.getLastIdx(); ++iMCHTrack) {
+        // LOG(info) << "Loop mchtrack" << iMCHTrack;
 
         auto mchTrack = mchTracks.at(iMCHTrack);
         int id_track = iMCHTrack;
         int nb_clusters = mchTrack.getNClusters();
         track_count1++;
+        // LOG(info) << "Loop mchtrack " << iMCHTrack << " with " << mchTrack.getNClusters() << " clusters and p = " << mchTrack.getP() << " GeV/c";
+
         // Track selection, saving only tracks having exactly 10 clusters
         // if (nb_clusters <= 9) {
         if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
@@ -390,9 +387,9 @@ class AlignmentTask
         }
         track_count2++;
 
-        if (!GoodTrack(mchTrack)) {
-          continue;
-        }
+        // if (!GoodTrack(mchTrack)) {
+        //   continue;
+        // }
         // Format conversion from TrackMCH to Track(MCH internal use)
         Track convertedTrack = MCHFormatConvert(mchTrack, mchClusters, doReAlign);
 
@@ -403,7 +400,7 @@ class AlignmentTask
         track_count3++;
 
         //  Track processing, saving residuals
-        mAlign.ProcessTrack(convertedTrack, transformation, weightRecord);
+        mAlign.ProcessTrack(convertedTrack, transformation, doRecord, weightRecord);
       }
     }
   }
@@ -448,13 +445,13 @@ class AlignmentTask
           exit(-1);
         }
 
-        LOG(info) << "Starting track processing";
+        LOG(info) << "Starting track processing with matching";
         while (mchReader->Next() && muonReader->Next()) {
           int id_event = mchReader->GetCurrentEntry();
           processWithMatching(*mchROFs, *mchTracks, *mchClusters, *muonTracks);
         }
       } else {
-        LOG(info) << "Starting track processing";
+        LOG(info) << "Starting track processing without matching";
         while (mchReader->Next()) {
           int id_event = mchReader->GetCurrentEntry();
           processWithOutMatching(*mchROFs, *mchTracks, *mchClusters);
@@ -965,6 +962,7 @@ class AlignmentTask
   string IdealGeoFileName{""};
   string RefGeoFileName{""};
   string NewGeoFileName{""};
+  bool doRecord{false};
   bool doAlign{false};
   bool doReAlign{false};
   bool doMatched{false};
@@ -1013,17 +1011,30 @@ o2::framework::DataProcessorSpec getAlignmentSpec(bool disableCCDB)
             {"geo-file-ideal", VariantType::String, o2::base::NameConf::getGeomFileName(), {"Name of the ideal geometry file"}},
             {"grp-file", VariantType::String, o2::base::NameConf::getGRPFileName(), {"Name of the grp file"}},
             {"do-align", VariantType::Bool, false, {"Switch for alignment, otherwise only residuals will be stored"}},
+            {"do-record", VariantType::Bool, false, {"Switch for storing records"}},
             {"do-evaluation", VariantType::Bool, false, {"Option for saving residuals for evaluation"}},
             {"do-realign", VariantType::Bool, false, {"Switch for re-alignment using another geometry"}},
             {"matched", VariantType::Bool, false, {"Switch for using MCH-MID matched tracks"}},
             {"fix-chamber", VariantType::String, "", {"Chamber fixing, ex 1,2,3"}},
             {"use-record", VariantType::Bool, false, {"Option for directly using record in alignment if provided"}},
-            {"variation-x", VariantType::Float, 2.0, {"Allowed variation for x axis in cm"}},
-            {"variation-y", VariantType::Float, 0.3, {"Allowed variation for y axis in cm"}},
-            {"variation-phi", VariantType::Float, 0.002, {"Allowed variation for phi axis in rad"}},
-            {"variation-z", VariantType::Float, 2.0, {"Allowed variation for z axis in cm"}},
-            {"sigma-x", VariantType::Float, 1000.0, {"Sigma cut along X"}},
-            {"sigma-y", VariantType::Float, 1000.0, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 2.0f, {"Allowed variation for x axis in cm"}},
+            // {"variation-y", VariantType::Float, 0.3f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.002f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 1.0f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.01f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.1f, {"Allowed variation for x axis in cm"}},
+            // {"variation-y", VariantType::Float, 0.05f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.1f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
+            {"variation-x", VariantType::Float, 0.25f, {"Allowed variation for x axis in cm"}},
+            {"variation-y", VariantType::Float, 0.02f, {"Allowed variation for y axis in cm"}},
+            {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            {"sigma-y", VariantType::Float, 0.05f, {"Sigma cut along Y"}},
             {"fix-de", VariantType::String, "", {"DE fixing, ex 101,1019"}},
             {"mask-fix-de", VariantType::String, "", {"Mask for DE d.o.f fixing, ex 0,2,4"}},
             {"output", VariantType::String, "Alignment", {"Option for name of output file"}}}};

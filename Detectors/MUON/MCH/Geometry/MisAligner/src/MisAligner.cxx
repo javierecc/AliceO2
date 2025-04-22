@@ -325,6 +325,11 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
                                        {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1020, 1021, 1022, 1023, 1024, 1025},
                                        {1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019}};
 
+  float fixShift[4][2] = {{0.325, 1.256},
+                          {0.626, 1.207},
+                          {-0.329, 1.163},
+                          {-0.820, 1.034}};
+
   o2::detectors::AlignParam lAP;
   for (int hc = 0; hc < 20; hc++) {
 
@@ -353,19 +358,34 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
 
       localDeltaTransform = misAlignDetElem();
 
+      if (hc == 0 && de == 0) {
+        localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[0][0]);
+        localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[0][1]);
+      } else if (hc == 0 && de == 1) {
+        localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[3][0]);
+        localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[3][1]);
+      } else if (hc == 1 && de == 0) {
+        localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[1][0]);
+        localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[1][1]);
+      } else if (hc == 1 && de == 1) {
+        localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[2][0]);
+        localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[2][1]);
+      }
+
       sname = fmt::format("MCH/HC{}/DE{}", hc, DEofHC[hc][de]);
       lAP.setSymName(sname.c_str());
 
       if (!isMatrixConvertedToAngles(localDeltaTransform.GetRotationMatrix(), lPsi, lTheta, lPhi)) {
         LOG(error) << "Problem extracting angles for " << sname.c_str();
       }
-      LOG(debug) << fmt::format("DetElem {} is {} : {} : Local Delta| X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
-                                localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
-      if (!lAP.setLocalParams(localDeltaTransform)) {
-        LOG(error) << "  Could not set local params for " << sname.c_str();
-      }
-      LOG(debug) << fmt::format("DetElem {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
-                                lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
+      LOG(info) << fmt::format("DetElem {} is {} : {} : Local Delta| X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), localDeltaTransform.GetTranslation()[0],
+                               localDeltaTransform.GetTranslation()[1], localDeltaTransform.GetTranslation()[2], lPsi, lTheta, lPhi);
+      lAP.setGlobalParams(localDeltaTransform);
+      // if (!lAP.setLocalParams(localDeltaTransform)) {
+      //   LOG(error) << "  Could not set local params for " << sname.c_str();
+      // }
+      LOG(info) << fmt::format("DetElem {} is {} : {} : Global Delta | X: {:+f} Y: {:+f} Z: {:+f} | pitch: {:+f} roll: {:+f} yaw: {:+f}\n", de, lAP.getSymName(), lAP.getAlignableID(), lAP.getX(),
+                               lAP.getY(), lAP.getZ(), lAP.getPsi(), lAP.getTheta(), lAP.getPhi());
       lAP.applyToGeometry();
       params.emplace_back(lAP);
     }
