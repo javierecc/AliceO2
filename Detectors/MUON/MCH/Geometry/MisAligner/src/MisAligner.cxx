@@ -325,10 +325,64 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
                                        {1000, 1001, 1002, 1003, 1004, 1005, 1006, 1020, 1021, 1022, 1023, 1024, 1025},
                                        {1007, 1008, 1009, 1010, 1011, 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019}};
 
-  float fixShift[4][2] = {{0.325, 1.256},
-                          {0.626, 1.207},
-                          {-0.329, 1.163},
-                          {-0.820, 1.034}};
+  // float fixShift[4][2] = {{0.325, 1.256},
+  //                         {0.626, 1.207},
+  //                         {-0.329, 1.163},
+  //                         {-0.820, 1.034}};
+
+  // ShiftCh1B
+  // float fixShift[4][2] = {{0., 0.},
+  //                         {0., 0.0},
+  //                         {0., 0.83},
+  //                         {0., 0.83}};
+
+  // Shift04Ch1B
+  // float fixShift[4][2] = {{0., 0.},
+  //                         {0., 0.0},
+  //                         {0., 0.4},
+  //                         {0., 0.4}};
+
+  // ShiftCh1TB
+  // float fixShift[4][2] = {{0., -0.5},
+  //                         {0., -0.5},
+  //                         {0., 0.5},
+  //                         {0., 0.5}};
+
+  // Shift04Ch1B
+  // float fixShift[4][2] = {{0., 0.05},
+  //                         {0., 0.05},
+  //                         {0., 0.05},
+  //                         {0., 0.05}};
+  // ShiftT2CH1
+  // float fixShift[4][2] = {{0., -0.05},
+  //                         {0., -0.05},
+  //                         {0., +0.5},
+  //                         {0., +0.5}};
+  // // ShiftT3Ch1B
+  // float fixShift[4][2] = {{0., -0.03},
+  //                         {0., -0.03},
+  //                         {0., +0.45},
+  //                         {0., +0.6}};
+  // // ShiftT4Ch1B
+  // float fixShift[4][2] = {{0., -0.01},
+  //                         {0., -0.01},
+  //                         {0., +0.47},
+  //                         {0., +0.62}};
+  // // ShiftT5Ch1B
+  // float fixShift[4][2] = {{0.05, -0.01},
+  //                         {-0.05, -0.01},
+  //                         {-0.05, +0.47},
+  //                         {-0.05, +0.62}};
+  // // ShiftT6Ch1B
+  // float fixShift[4][2] = {{0.05, +0.01},
+  //                         {-0.1, +0.01},
+  //                         {-0.1, +0.5},
+  //                         {-0.07, +0.65}};
+  // ShiftT7Ch1B
+  float fixShift[4][2] = {{0.03, +0.02},
+                          {-0.11, +0.02},
+                          {-0.11, +0.5},
+                          {-0.08, +0.64}};
 
   o2::detectors::AlignParam lAP;
   for (int hc = 0; hc < 20; hc++) {
@@ -357,6 +411,7 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
     for (int de = 0; de < DEofHC[hc].size(); de++) {
 
       localDeltaTransform = misAlignDetElem();
+      // localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - 1.0);
 
       if (hc == 0 && de == 0) {
         localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[0][0]);
@@ -370,6 +425,24 @@ void MisAligner::misAlign(std::vector<o2::detectors::AlignParam>& params, Bool_t
       } else if (hc == 1 && de == 1) {
         localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[2][0]);
         localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[2][1]);
+      }
+
+      // if ((hc == 0 || hc == 2) && de == 0) {
+      //   localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[0][0]);
+      //   localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[0][1]);
+      // } else if ((hc == 0 || hc == 2) && de == 1) {
+      //   localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[3][0]);
+      //   localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[3][1]);
+      // } else if ((hc == 1 || hc == 3) && de == 0) {
+      //   localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[1][0]);
+      //   localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[1][1]);
+      // } else if ((hc == 1 || hc == 3) && de == 1) {
+      //   localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - fixShift[2][0]);
+      //   localDeltaTransform.SetDy(localDeltaTransform.GetTranslation()[1] - fixShift[2][1]);
+      // }
+
+      if (hc == 19) {
+        localDeltaTransform.SetDx(localDeltaTransform.GetTranslation()[0] - 4.7);
       }
 
       sname = fmt::format("MCH/HC{}/DE{}", hc, DEofHC[hc][de]);

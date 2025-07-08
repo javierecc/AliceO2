@@ -338,8 +338,8 @@ class AlignmentTask
         int nb_clusters = mchTrack.getNClusters();
 
         // Track selection, considering only tracks having at least 10 clusters
-        // if (nb_clusters <= 9) {
-        if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
+        if (nb_clusters <= 9) {
+          // if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
           continue;
         }
         track_count2++;
@@ -383,6 +383,7 @@ class AlignmentTask
         // Track selection, saving only tracks having exactly 10 clusters
         // if (nb_clusters <= 9) {
         if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
+          // if (nb_clusters <= 9 || mchTrack.getP() < 10.0) {
           continue;
         }
         track_count2++;
@@ -697,23 +698,23 @@ class AlignmentTask
       return false;
     }
 
-    // DCA
-    o2::mch::TrackParam trackParamAtDCA(track.getZ(), track.getParameters());
-    o2::mch::TrackExtrap::extrapToVertexWithoutBranson(trackParamAtDCA, 0.);
-    double dcaX = trackParamAtDCA.getNonBendingCoor();
-    double dcaY = trackParamAtDCA.getBendingCoor();
-    double dca = sqrt(dcaX * dcaX + dcaY * dcaY);
-    double pDCA = track.getP() * dca;
-    double sigmaPDCA = (thetaAbs < 3) ? sigmaPDCA23 : sigmaPDCA310;
-    double nrp = nSigmaPDCA * relPRes * p;
-    double pResEffect = sigmaPDCA / (1. - nrp / (1. + nrp));
-    double slopeResEffect = 535. * slopeRes * p;
-    double sigmaPDCAWithRes = TMath::Sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
-    if (pDCA > nSigmaPDCA * sigmaPDCAWithRes) {
-      if (0)
-        std::cerr << "Track rejected: not in the PDCA range (" << pDCA << ")" << std::endl;
-      return false;
-    }
+    // // DCA
+    // o2::mch::TrackParam trackParamAtDCA(track.getZ(), track.getParameters());
+    // o2::mch::TrackExtrap::extrapToVertexWithoutBranson(trackParamAtDCA, 0.);
+    // double dcaX = trackParamAtDCA.getNonBendingCoor();
+    // double dcaY = trackParamAtDCA.getBendingCoor();
+    // double dca = sqrt(dcaX * dcaX + dcaY * dcaY);
+    // double pDCA = track.getP() * dca;
+    // double sigmaPDCA = (thetaAbs < 3) ? sigmaPDCA23 : sigmaPDCA310;
+    // double nrp = nSigmaPDCA * relPRes * p;
+    // double pResEffect = sigmaPDCA / (1. - nrp / (1. + nrp));
+    // double slopeResEffect = 535. * slopeRes * p;
+    // double sigmaPDCAWithRes = TMath::Sqrt(pResEffect * pResEffect + slopeResEffect * slopeResEffect);
+    // if (pDCA > nSigmaPDCA * sigmaPDCAWithRes) {
+    //   if (0)
+    //     std::cerr << "Track rejected: not in the PDCA range (" << pDCA << ")" << std::endl;
+    //   return false;
+    // }
 
     return true;
   }
@@ -1023,18 +1024,42 @@ o2::framework::DataProcessorSpec getAlignmentSpec(bool disableCCDB)
             // {"variation-z", VariantType::Float, 1.0f, {"Allowed variation for z axis in cm"}},
             // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
             // {"sigma-y", VariantType::Float, 0.01f, {"Sigma cut along Y"}},
-            // {"variation-x", VariantType::Float, 0.1f, {"Allowed variation for x axis in cm"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // T3
+            // {"variation-y", VariantType::Float, 0.2f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.1f, {"Allowed variation for x axis in cm"}}, // T4
             // {"variation-y", VariantType::Float, 0.05f, {"Allowed variation for y axis in cm"}},
             // {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
             // {"variation-z", VariantType::Float, 0.1f, {"Allowed variation for z axis in cm"}},
             // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
             // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
-            {"variation-x", VariantType::Float, 0.25f, {"Allowed variation for x axis in cm"}},
-            {"variation-y", VariantType::Float, 0.02f, {"Allowed variation for y axis in cm"}},
-            {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-x", VariantType::Float, 0.1f, {"Allowed variation for x axis in cm"}}, // T5
+            // {"variation-y", VariantType::Float, 0.05f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.1f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.1f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.05f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // T6
+            // {"variation-y", VariantType::Float, 0.3f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0008f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.4f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.25f, {"Allowed variation for x axis in cm"}},
+            // {"variation-y", VariantType::Float, 0.02f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.05f, {"Sigma cut along Y"}},
+            {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P1
+            {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
+            {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
             {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
             {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
-            {"sigma-y", VariantType::Float, 0.05f, {"Sigma cut along Y"}},
+            {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
             {"fix-de", VariantType::String, "", {"DE fixing, ex 101,1019"}},
             {"mask-fix-de", VariantType::String, "", {"Mask for DE d.o.f fixing, ex 0,2,4"}},
             {"output", VariantType::String, "Alignment", {"Option for name of output file"}}}};

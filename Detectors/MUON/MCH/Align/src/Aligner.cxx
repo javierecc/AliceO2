@@ -1379,7 +1379,7 @@ void Aligner::ReAlign(
 
         sname = fmt::format("MCH/HC{}/DE{}", hc, fgDetElemHalfCh[hc][de]);
         lAP.setSymName(sname.c_str());
-        lDetElemMisAlignment[1] += -1.15;
+        // lDetElemMisAlignment[1] += -1.15;
         // if (hc == 19) {
         //   lDetElemMisAlignment[0] += 4.7;
         // }
