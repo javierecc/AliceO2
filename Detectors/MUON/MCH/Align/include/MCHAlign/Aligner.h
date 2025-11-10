@@ -140,7 +140,8 @@ class Aligner : public TObject
     fNLocal = 4, // t_x, t_y, x0, y0
 
     /// Number of degrees of freedom per chamber
-    fgNParCh = 4, // x,y,z,phi
+    // fgNParCh = 4, // x,y,phi,z
+    fgNParCh = 6, // x,y,phi,z,psi,theta
 
     /// Number of global parameters
     fNGlobal = fgNParCh * fgNDetElem
@@ -164,9 +165,12 @@ class Aligner : public TObject
     ParY = 1 << 1,
     ParZ = 1 << 2,
     ParTZ = 1 << 3,
+    ParTY = 1 << 4,
+    ParTX = 1 << 5,
+
 
     ParAllTranslations = ParX | ParY | ParZ,
-    ParAllRotations = ParTZ,
+    ParAllRotations = ParTZ | ParTY | ParTX,
     ParAll = ParAllTranslations | ParAllRotations
 
   };

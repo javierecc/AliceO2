@@ -163,6 +163,8 @@ Aligner::Aligner()
   fAllowVar[1] = 0.5;  // y
   fAllowVar[2] = 0.01; // phi_z
   fAllowVar[3] = 5;    // z
+  fAllowVar[4] = 0.01; // psi_x
+  fAllowVar[5] = 0.01; // tht_y
 
   // initialize millepede
   fMillepede = new o2::fwdalign::MillePede2();
@@ -409,6 +411,8 @@ void Aligner::ProcessTrack(Track& track, const o2::mch::geo::TransformationCreat
     }
   }
 
+  // LOG(info) << " ST Params (" << fTrackPos0[0] << ", " << fTrackPos0[1] << ", " << fTrackPos0[2] << ", "  << fTrackSlope0[0] << ", " << fTrackPos0[1] << ") ";
+
   // redo straight track fit
   if (fRefitStraightTracks) {
 
@@ -427,6 +431,7 @@ void Aligner::ProcessTrack(Track& track, const o2::mch::geo::TransformationCreat
       fTrackSlope0[1] = trackParam.fTrackSlopeY;
     }
   }
+  // LOG(info) << "RST Params (" << fTrackPos0[0] << ", " << fTrackPos0[1] << ", " << fTrackPos0[2] << ", "  << fTrackSlope0[0] << ", " << fTrackPos0[1] << ") ";
 
   // second loop to perform alignment
   itTrackParam = track.begin();
@@ -442,28 +447,49 @@ void Aligner::ProcessTrack(Track& track, const o2::mch::geo::TransformationCreat
 
     FillDetElemData(cluster); // function to get the transformation matrix
     FillRecPointData(cluster);
-    FillTrackParamData(&*itTrackParam);
-
+    if (!fBFieldOn) {
+      TrackParam out;
+      out.setNonBendingCoor(fTrackPos0[0] + fTrackSlope0[0] * (itTrackParam->getZ() - fTrackPos0[2]));
+      out.setBendingCoor(fTrackPos0[1] + fTrackSlope0[1] * (itTrackParam->getZ() - fTrackPos0[2]));
+      out.setZ(itTrackParam->getZ());
+      out.setNonBendingSlope(fTrackSlope0[0]);
+      out.setBendingSlope(fTrackSlope0[1]);
+      FillTrackParamData(&out);
+    } else {
+      FillTrackParamData(&*itTrackParam);
+    }
     // 'inverse' (GlobalToLocal) rotation matrix
     // const double* r(fGeoCombiTransInverse.GetRotationMatrix());
     o2::math_utils::Transform3D trans = transformation(cluster->getDEId());
     // LOG(info) << Form("cluster ID: %i", cluster->getDEId());
-    TMatrixD transMat(3, 4);
-    trans.GetTransformMatrix(transMat);
+    TGeoHMatrix transL2G = trans;
+    TGeoHMatrix transMat = transL2G.Inverse();
+    // TMatrixD transMat(3, 4);
+    // trans.GetTransformMatrix(transMat);
     // transMat.Print();
+    double* q = transMat.GetRotationMatrix();
+    double* t = transL2G.GetTranslation();
+    // double q[12];
     double r[12];
-    r[0] = transMat(0, 0);
-    r[1] = transMat(0, 1);
-    r[2] = transMat(0, 2);
-    r[3] = transMat(1, 0);
-    r[4] = transMat(1, 1);
-    r[5] = transMat(1, 2);
-    r[6] = transMat(2, 0);
-    r[7] = transMat(2, 1);
-    r[8] = transMat(2, 2);
-    r[9] = transMat(0, 3);
-    r[10] = transMat(1, 3);
-    r[11] = transMat(2, 3);
+    // r[0] = transMat(0, 0);
+    // r[1] = transMat(0, 1);
+    // r[2] = transMat(0, 2);
+    // r[3] = transMat(1, 0);
+    // r[4] = transMat(1, 1);
+    // r[5] = transMat(1, 2);
+    // r[6] = transMat(2, 0);
+    // r[7] = transMat(2, 1);
+    // r[8] = transMat(2, 2);
+    // r[9] = transMat(0, 3);
+    // r[10] = transMat(1, 3);
+    // r[11] = transMat(2, 3);
+    for (size_t i = 0; i < 9; i++) {
+      r[i] = q[i];
+    }
+    for (size_t i = 0; i < 3; i++) {
+      r[9 + i] = t[i];
+    }
+
     // calculate measurements
     if (fBFieldOn) {
 
@@ -472,9 +498,11 @@ void Aligner::ProcessTrack(Track& track, const o2::mch::geo::TransformationCreat
       fMeas[1] = r[3] * (fClustPos[0] - fTrackPos[0]) + r[4] * (fClustPos[1] - fTrackPos[1]);
     } else {
 
-      // use cluster position for measurement
+      // // use cluster position for measurement
       fMeas[0] = (r[0] * fClustPos[0] + r[1] * fClustPos[1]);
       fMeas[1] = (r[3] * fClustPos[0] + r[4] * fClustPos[1]);
+      // fMeas[0] = r[0] * (fClustPos[0] - fTrackPos[0]) + r[1] * (fClustPos[1] - fTrackPos[1]);
+      // fMeas[1] = r[3] * (fClustPos[0] - fTrackPos[0]) + r[4] * (fClustPos[1] - fTrackPos[1]);
     }
     // printf("DE %d, X: %f %f (%f); Y: %f %f (%f); Z: %f\n", cluster->getDEId(), fClustPos[0], fTrackPos[0], fMeas[0], fClustPos[1], fTrackPos[1], fMeas[0], fClustPos[2]);
 
@@ -570,6 +598,12 @@ void Aligner::FixAll(unsigned int mask)
     if (mask & ParZ) {
       FixParameter(i, 3);
     }
+    if (mask & ParTX) {
+      FixParameter(i, 4);
+    }
+    if (mask & ParTY) {
+      FixParameter(i, 5);
+    }
   }
 }
 
@@ -602,6 +636,12 @@ void Aligner::FixChamber(int iCh, unsigned int mask)
     if (mask & ParZ) {
       FixParameter(i, 3);
     }
+    if (mask & ParTX) {
+      FixParameter(i, 4);
+    }
+    if (mask & ParTY) {
+      FixParameter(i, 5);
+    }
   }
 }
 
@@ -622,6 +662,12 @@ void Aligner::FixDetElem(int iDetElemId, unsigned int mask)
   }
   if (mask & ParZ) {
     FixParameter(iDet, 3);
+  }
+  if (mask & ParTX) {
+    FixParameter(iDet, 4);
+  }
+  if (mask & ParTY) {
+    FixParameter(iDet, 5);
   }
 }
 
@@ -736,6 +782,12 @@ void Aligner::ReleaseChamber(int iCh, unsigned int mask)
     if (mask & ParZ) {
       ReleaseParameter(i, 3);
     }
+    if (mask & ParTX) {
+      ReleaseParameter(i, 4);
+    }
+    if (mask & ParTY) {
+      ReleaseParameter(i, 5);
+    }
   }
 }
 
@@ -755,6 +807,12 @@ void Aligner::ReleaseDetElem(int iDetElemId, unsigned int mask)
   }
   if (mask & ParZ) {
     ReleaseParameter(iDet, 3);
+  }
+  if (mask & ParTX) {
+    ReleaseParameter(iDet, 4);
+  }
+  if (mask & ParTY) {
+    ReleaseParameter(iDet, 5);
   }
 }
 
@@ -843,6 +901,12 @@ void Aligner::GroupDetElems(const int* detElemList, int nDetElem, unsigned int m
     if (mask & ParZ) {
       fGlobalParameterStatus[iDeCurrent * fgNParCh + 3] = (i == 0) ? kGroupBaseId : (kGroupBaseId - iDeBase - 1);
     }
+    if (mask & ParTX) {
+      fGlobalParameterStatus[iDeCurrent * fgNParCh + 4] = (i == 0) ? kGroupBaseId : (kGroupBaseId - iDeBase - 1);
+    }
+    if (mask & ParTY) {
+      fGlobalParameterStatus[iDeCurrent * fgNParCh + 5] = (i == 0) ? kGroupBaseId : (kGroupBaseId - iDeBase - 1);
+    }
 
     if (i == 0) {
       LOG(info) << "Creating new group for detector " << detElemList[i] << " and variable " << GetParameterMaskString(mask).Data();
@@ -872,6 +936,12 @@ void Aligner::SetChamberNonLinear(int iCh, unsigned int mask)
     if (mask & ParZ) {
       SetParameterNonLinear(i, 3);
     }
+    if (mask & ParTX) {
+      SetParameterNonLinear(i, 4);
+    }
+    if (mask & ParTY) {
+      SetParameterNonLinear(i, 5);
+    }
   }
 }
 
@@ -891,6 +961,12 @@ void Aligner::SetDetElemNonLinear(int iDetElemId, unsigned int mask)
   }
   if (mask & ParZ) {
     SetParameterNonLinear(iDet, 3);
+  }
+  if (mask & ParTX) {
+    SetParameterNonLinear(iDet, 4);
+  }
+  if (mask & ParTY) {
+    SetParameterNonLinear(iDet, 5);
   }
 }
 
@@ -1303,7 +1379,7 @@ void Aligner::GlobalFit(std::vector<double>& parameters, std::vector<double>& er
 
   LOG(info) << "Done fitting global parameters";
   for (int iDet = 0; iDet < fgNDetElem; ++iDet) {
-    LOG(info) << iDet << " " << parameters[iDet * fgNParCh + 0] << " " << parameters[iDet * fgNParCh + 1] << " " << parameters[iDet * fgNParCh + 3] << " " << parameters[iDet * fgNParCh + 2];
+    LOG(info) << iDet << " " << parameters[iDet * fgNParCh + 0] << " " << parameters[iDet * fgNParCh + 1] << " " << parameters[iDet * fgNParCh + 3] << " " << parameters[iDet * fgNParCh + 2] << " " << parameters[iDet * fgNParCh + 5] << " " << parameters[iDet * fgNParCh + 4];
   }
 }
 
@@ -1391,7 +1467,9 @@ void Aligner::ReAlign(
           LOG(error) << "Problem extracting angles for " << sname.c_str();
         }
 
-        lAP.setGlobalParams(localDeltaTransform);
+        // lAP.setGlobalParams(localDeltaTransform);
+        // lAP.setGlobalParams(lDetElemMisAlignment[0], lDetElemMisAlignment[1], lDetElemMisAlignment[3], lDetElemMisAlignment[4], lDetElemMisAlignment[5], lDetElemMisAlignment[2]);
+        lAP.setLocalParams(lDetElemMisAlignment[0], lDetElemMisAlignment[1], lDetElemMisAlignment[3], lDetElemMisAlignment[4], lDetElemMisAlignment[5], lDetElemMisAlignment[2]);
         lAP.applyToGeometry();
         params.emplace_back(lAP);
 
@@ -1479,6 +1557,12 @@ LocalTrackParam Aligner::RefitStraightTrack(Track& track, double z0) const
       continue;
     }
 
+    // if (cluster->getChamberId() == 9 || cluster->getChamberId() == 10 ) {
+    //   continue;
+    // }
+    // if (cluster->getChamberId() == 5 || cluster->getChamberId() == 6 ) {
+    //   continue;
+    // }
     // projection matrix
     TMatrixD A(2, 4);
     A.Zero();
@@ -1578,10 +1662,15 @@ void Aligner::LocalEquationX(const double* r)
   1: delta_y
   2: delta_phiz
   3: delta_z
+  4: delta_psix
+  5: delta_thty
   */
-
-  SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, -r[0]);
-  SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, -r[1]);
+  // SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, -r[0]);
+  // local delta with z
+  SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, -1);
+  // SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, -r[1]);
+  // local delta with z
+  SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, 0);
 
   if (fBFieldOn) {
 
@@ -1590,7 +1679,6 @@ void Aligner::LocalEquationX(const double* r)
 
     // use local slopes for derivatives vs 'delta_z'
     SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[0] * fTrackSlope[0] + r[1] * fTrackSlope[1]);
-
   } else {
 
     // local copy of extrapolated track positions
@@ -1598,14 +1686,33 @@ void Aligner::LocalEquationX(const double* r)
     const double trackPosY = fTrackPos0[1] + fTrackSlope0[1] * (fTrackPos[2] - fTrackPos0[2]);
 
     // use properly extrapolated position for derivatives vs 'delta_phi_z'
-    SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[1] * trackPosX + r[0] * trackPosY);
-    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[1] * (trackPosX - r[9]) + r[0] * (trackPosY - r[10]));
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[1] * trackPosX + r[0] * trackPosY);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, r[3] * (trackPosX - r[9]) + r[4] * (trackPosY - r[10]));
 
     // use slopes at origin for derivatives vs 'delta_z'
-    SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[0] * fTrackSlope0[0] + r[1] * fTrackSlope0[1]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, -r[2]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[0] * fTrackSlope0[0]);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, (r[0] * fTrackSlope0[0] + r[2]) / r[8]);
+
+    // straight calculation with global delta
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, -r[0] * trackPosY + r[1] * fTrackPos[2]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, r[0] * fTrackSlope0[0] * trackPosY + r[1] * fTrackPos[2]);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, ((r[0] * fTrackSlope0[0] + r[2]) * r[4] * (trackPosY - r[10])) / r[8]);
+
+    // straight calculation with global delta
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, r[2] * trackPosX - r[0] * fTrackPos[2]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, (-r[0] * fTrackSlope0[0] * trackPosX - r[0] * fTrackPos[2] +
+    //                                                     (r[0] * r[6] * (trackPosX - r[9])) / r[8] +
+    //                                                     (r[0] * r[7] * (trackPosY - r[10])) / r[8]));
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, ((-r[0] * fTrackSlope0[0] - r[2]) * r[0] * (trackPosX - r[9])) / r[8]);
   }
 
   // store local equation
+  // fMillepede->SetLocalEquation(fGlobalDerivatives, fLocalDerivatives, fMeas[0], fSigma[0] * 0.5 * (1. + (300. - abs(fTrackPos[0])) / 300.));
   fMillepede->SetLocalEquation(fGlobalDerivatives, fLocalDerivatives, fMeas[0], fSigma[0]);
 }
 
@@ -1627,28 +1734,48 @@ void Aligner::LocalEquationY(const double* r)
   // SetLocalDerivative(3, -r[4] * fTrackPos[2]);
 
   // set global derivatives
-  SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, -r[3]);
-  SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, -r[4]);
+  // SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, -r[3]);
+  // local delta with z
+  SetGlobalDerivative(fDetElemNumber * fgNParCh + 0, 0);
+  // local delta with z
+  // SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, -r[4]);
+  SetGlobalDerivative(fDetElemNumber * fgNParCh + 1, -1);
 
   if (fBFieldOn) {
-
     // use local position for derivatives vs 'delta_phi'
     SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[4] * fTrackPos[0] + r[3] * fTrackPos[1]);
 
     // use local slopes for derivatives vs 'delta_z'
     SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[3] * fTrackSlope[0] + r[4] * fTrackSlope[1]);
-
   } else {
-
     // local copy of extrapolated track positions
     const double trackPosX = fTrackPos0[0] + fTrackSlope0[0] * (fTrackPos[2] - fTrackPos0[2]);
     const double trackPosY = fTrackPos0[1] + fTrackSlope0[1] * (fTrackPos[2] - fTrackPos0[2]);
 
     // use properly extrapolated position for derivatives vs 'delta_phi'
-    SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[4] * trackPosX + r[3] * trackPosY);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[4] * trackPosX + r[3] * trackPosY);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 2, -r[0] * (trackPosX - r[9]) - r[1] * (trackPosY - r[10]));
 
     // use slopes at origin for derivatives vs 'delta_z'
-    SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[3] * fTrackSlope0[0] + r[4] * fTrackSlope0[1]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, -r[5]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, r[4] * fTrackSlope0[1]);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 3, (r[4] * fTrackSlope0[1] + r[5]) / r[8]);
+
+    // // delta_psi
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, -r[5] * trackPosY + r[4] * fTrackPos[2]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, (r[4] * fTrackSlope0[1] * trackPosY + r[4] * fTrackPos[2] +
+    //                                                     (-r[4] * r[6] * (trackPosX - r[9])) / r[8] +
+    //                                                     (-r[4] * r[7] * (trackPosY - r[10])) / r[8]));
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 4, ((r[4] * fTrackSlope0[1] + r[5]) * r[4] * (trackPosY - r[10])) / r[8]);
+
+    // // delta_theta
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, r[5] * trackPosX - r[3] * fTrackPos[2]);
+    // SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, -r[4] * fTrackSlope0[1] * trackPosX - r[3] * fTrackPos[2]);
+    // local delta with z
+    SetGlobalDerivative(fDetElemNumber * fgNParCh + 5, ((-r[4] * fTrackSlope0[1] - r[5]) * r[0] * (trackPosX - r[9])) / r[8]);
   }
 
   // store local equation
@@ -1665,6 +1792,8 @@ TGeoCombiTrans Aligner::DeltaTransform(const double* lMisAlignment) const
 
   // rotation
   TGeoRotation deltaRot;
+  deltaRot.RotateX(lMisAlignment[4] * 180. / TMath::Pi());
+  deltaRot.RotateY(lMisAlignment[5] * 180. / TMath::Pi());
   deltaRot.RotateZ(lMisAlignment[2] * 180. / TMath::Pi());
 
   // combined rotation and translation.
@@ -1757,8 +1886,14 @@ TString Aligner::GetParameterMaskString(unsigned int mask) const
   if (mask & ParZ) {
     out += "Z";
   }
+  if (mask & ParTX) {
+    out += "Psi";
+  }
+  if (mask & ParTY) {
+    out += "Tht";
+  }
   if (mask & ParTZ) {
-    out += "T";
+    out += "TPhi";
   }
   return out;
 }

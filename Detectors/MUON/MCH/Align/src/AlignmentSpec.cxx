@@ -38,6 +38,7 @@
 #include <TLegend.h>
 #include <TLine.h>
 #include <TMatrixD.h>
+#include <TRandom.h>
 #include <TSystem.h>
 #include <TTree.h>
 #include <TTreeReader.h>
@@ -145,7 +146,8 @@ class AlignmentTask
     LOG(info) << "Initializing aligner";
     // Initialize alignment algorithm
 
-    int numberOfGlobalParam = 624;
+    // int numberOfGlobalParam = 624;
+    int numberOfGlobalParam = 936;
     double default_value = 0;
     params = std::vector<double>(numberOfGlobalParam, default_value);
     errors = std::vector<double>(numberOfGlobalParam, default_value);
@@ -222,6 +224,8 @@ class AlignmentTask
       }
     }
 
+    mAlign.SetRefitStraightTracks(kTRUE);
+
     auto doEvaluation = ic.options().get<bool>("do-evaluation");
     mAlign.SetDoEvaluation(doEvaluation);
 
@@ -230,10 +234,17 @@ class AlignmentTask
     auto AllowY = ic.options().get<float>("variation-y");
     auto AllowPhi = ic.options().get<float>("variation-phi");
     auto AllowZ = ic.options().get<float>("variation-z");
+    // auto AllowPsi = 1.0;
+    // auto AllowTheta = 1.0;
+    auto AllowPsi = 0.005;
+    auto AllowTheta = 0.005;
+
     mAlign.SetAllowedVariation(0, AllowX);
     mAlign.SetAllowedVariation(1, AllowY);
     mAlign.SetAllowedVariation(2, AllowPhi);
     mAlign.SetAllowedVariation(3, AllowZ);
+    mAlign.SetAllowedVariation(4, AllowPsi);
+    mAlign.SetAllowedVariation(5, AllowTheta);
 
     // Sigma XY
     auto SigmaX = ic.options().get<float>("sigma-x");
@@ -348,6 +359,10 @@ class AlignmentTask
           continue;
         }
 
+        // if (abs(mchTrack.getParameters()[1]) < 0.1 && gRandom->Rndm() + 0.2 < TMath::Gaus(mchTrack.getParameters()[1], 0, 0.07)) {
+        //   continue;
+        // }
+
         Track convertedTrack = MCHFormatConvert(mchTrack, mchClusters, doReAlign);
 
         // Erase removable track
@@ -382,8 +397,8 @@ class AlignmentTask
 
         // Track selection, saving only tracks having exactly 10 clusters
         // if (nb_clusters <= 9) {
-        if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
-          // if (nb_clusters <= 9 || mchTrack.getP() < 10.0) {
+        // if (nb_clusters <= 9 || mchTrack.getP() < 5.0) {
+        if (nb_clusters <= 9 || mchTrack.getP() < 10.0) {
           continue;
         }
         track_count2++;
@@ -726,6 +741,8 @@ class AlignmentTask
     TH1F* hPullX = new TH1F("hPullX", "hPullX", 201, -10, 10);
     TH1F* hPullY = new TH1F("hPullY", "hPullY", 201, -10, 10);
     TH1F* hPullZ = new TH1F("hPullZ", "hPullZ", 201, -10, 10);
+    TH1F* hPullPsi = new TH1F("hPullPsi", "hPullPsi", 201, -10, 10);
+    TH1F* hPullTht = new TH1F("hPullTht", "hPullTht", 201, -10, 10);
     TH1F* hPullPhi = new TH1F("hPullPhi", "hPullPhi", 201, -10, 10);
 
     double deNumber[156];
@@ -733,56 +750,71 @@ class AlignmentTask
     double alignX[156];
     double alignY[156];
     double alignZ[156];
+    double alignPsi[156];
+    double alignTht[156];
     double alignPhi[156];
     double pullX[156];
     double pullY[156];
     double pullZ[156];
+    double pullPsi[156];
+    double pullTht[156];
     double pullPhi[156];
 
     for (int iDEN = 0; iDEN < 156; iDEN++) {
       deNumber[iDEN] = iDEN + 0.5;
-      alignX[iDEN] = params[iDEN * 4];
-      alignY[iDEN] = params[iDEN * 4 + 1];
-      alignZ[iDEN] = params[iDEN * 4 + 3];
-      alignPhi[iDEN] = params[iDEN * 4 + 2];
-      pullX[iDEN] = pulls[iDEN * 4];
-      pullY[iDEN] = pulls[iDEN * 4 + 1];
-      pullZ[iDEN] = pulls[iDEN * 4 + 3];
-      pullPhi[iDEN] = pulls[iDEN * 4 + 2];
+      alignX[iDEN] = params[iDEN * 6];
+      alignY[iDEN] = params[iDEN * 6 + 1];
+      alignZ[iDEN] = params[iDEN * 6 + 3];
+      alignPsi[iDEN] = params[iDEN * 6 + 4];
+      alignTht[iDEN] = params[iDEN * 6 + 5];
+      alignPhi[iDEN] = params[iDEN * 6 + 2];
+      pullX[iDEN] = pulls[iDEN * 6];
+      pullY[iDEN] = pulls[iDEN * 6 + 1];
+      pullZ[iDEN] = pulls[iDEN * 6 + 3];
+      pullPsi[iDEN] = pulls[iDEN * 6 + 4];
+      pullTht[iDEN] = pulls[iDEN * 6 + 5];
+      pullPhi[iDEN] = pulls[iDEN * 6 + 2];
       if (params[iDEN * 4]) {
 
-        hPullX->Fill(pulls[iDEN * 4]);
-        hPullY->Fill(pulls[iDEN * 4 + 1]);
-        hPullZ->Fill(pulls[iDEN * 4 + 3]);
-        hPullPhi->Fill(pulls[iDEN * 4 + 2]);
+        hPullX->Fill(pulls[iDEN * 6]);
+        hPullY->Fill(pulls[iDEN * 6 + 1]);
+        hPullZ->Fill(pulls[iDEN * 6 + 3]);
+        hPullPsi->Fill(pulls[iDEN * 6 + 4]);
+        hPullTht->Fill(pulls[iDEN * 6 + 5]);
+        hPullPhi->Fill(pulls[iDEN * 6 + 2]);
       }
     }
 
     TGraph* graphAlignX = new TGraph(156, deNumber, alignX);
     TGraph* graphAlignY = new TGraph(156, deNumber, alignY);
     TGraph* graphAlignZ = new TGraph(156, deNumber, alignZ);
+    TGraph* graphAlignPsi = new TGraph(156, deNumber, alignPsi);
+    TGraph* graphAlignTht = new TGraph(156, deNumber, alignTht);
     TGraph* graphAlignPhi = new TGraph(156, deNumber, alignPhi);
     // TGraph* graphAlignYZ = new TGraph(156, alignY, alignZ);
 
     TGraph* graphPullX = new TGraph(156, deNumber, pullX);
     TGraph* graphPullY = new TGraph(156, deNumber, pullY);
     TGraph* graphPullZ = new TGraph(156, deNumber, pullZ);
+    TGraph* graphPullPsi = new TGraph(156, deNumber, pullPsi);
+    TGraph* graphPullTht = new TGraph(156, deNumber, pullTht);
     TGraph* graphPullPhi = new TGraph(156, deNumber, pullPhi);
 
     graphAlignX->SetMarkerStyle(24);
     graphPullX->SetMarkerStyle(25);
 
-    //  graphAlignX->Draw("AP");
-
     graphAlignY->SetMarkerStyle(24);
     graphPullY->SetMarkerStyle(25);
-
-    // graphAlignY->Draw("Psame");
 
     graphAlignZ->SetMarkerStyle(24);
     graphPullZ->SetMarkerStyle(25);
 
-    //  graphAlignZ->Draw("AP");
+    graphAlignPsi->SetMarkerStyle(24);
+    graphPullPsi->SetMarkerStyle(25);
+
+    graphAlignTht->SetMarkerStyle(24);
+    graphPullTht->SetMarkerStyle(25);
+
     graphAlignPhi->SetMarkerStyle(24);
     graphPullPhi->SetMarkerStyle(25);
 
@@ -795,72 +827,61 @@ class AlignmentTask
     PlotFiles->WriteObjectAny(hPullX, "TH1F", "hPullX");
     PlotFiles->WriteObjectAny(hPullY, "TH1F", "hPullY");
     PlotFiles->WriteObjectAny(hPullZ, "TH1F", "hPullZ");
+    PlotFiles->WriteObjectAny(hPullPsi, "TH1F", "hPullPsi");
+    PlotFiles->WriteObjectAny(hPullTht, "TH1F", "hPullTht");
     PlotFiles->WriteObjectAny(hPullPhi, "TH1F", "hPullPhi");
     PlotFiles->WriteObjectAny(graphAlignX, "TGraph", "graphAlignX");
     PlotFiles->WriteObjectAny(graphAlignY, "TGraph", "graphAlignY");
     PlotFiles->WriteObjectAny(graphAlignZ, "TGraph", "graphAlignZ");
+    PlotFiles->WriteObjectAny(graphAlignPsi, "TGraph", "graphAlignPsi");
+    PlotFiles->WriteObjectAny(graphAlignTht, "TGraph", "graphAlignTht");
+    PlotFiles->WriteObjectAny(graphAlignPhi, "TGraph", "graphAlignPhi");
+
     // PlotFiles->WriteObjectAny(graphAlignYZ, "TGraph", "graphAlignYZ");
 
     TCanvas* cvn1 = new TCanvas("cvn1", "cvn1", 1200, 1600);
     // cvn1->Draw();
-    cvn1->Divide(1, 4);
+    cvn1->Divide(2, 3);
     TLine limLine(4, -5, 4, 5);
     TH1F* aHisto = new TH1F("aHisto", "AlignParam", 161, 0, 160);
     aHisto->SetXTitle("Det. Elem. Number");
-    for (int i = 1; i < 5; i++) {
+    double Range[6] = {5.0, 1.0, 5.0, 0.01, 0.01, 0.01};
+
+    for (int i = 1; i < 7; i++) {
       cvn1->cd(i);
-      double Range[4] = {5.0, 1.0, 5.0, 0.01};
+      aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
+
       switch (i) {
         case 1:
           aHisto->SetYTitle("#delta_{#X} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignX->Draw("Psame goff");
-          limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
-          limLine.DrawLine(8, -Range[i - 1], 8, Range[i - 1]);
-          limLine.DrawLine(12, -Range[i - 1], 12, Range[i - 1]);
-          limLine.DrawLine(16, -Range[i - 1], 16, Range[i - 1]);
-          limLine.DrawLine(16 + 18, -Range[i - 1], 16 + 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18, -Range[i - 1], 16 + 2 * 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 26, -Range[i - 1], 16 + 2 * 18 + 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 2 * 26, -Range[i - 1], 16 + 2 * 18 + 2 * 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 3 * 26, -Range[i - 1], 16 + 2 * 18 + 3 * 26, Range[i - 1]);
           break;
         case 2:
           aHisto->SetYTitle("#delta_{#Y} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignY->Draw("Psame goff");
-          limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
-          limLine.DrawLine(8, -Range[i - 1], 8, Range[i - 1]);
-          limLine.DrawLine(12, -Range[i - 1], 12, Range[i - 1]);
-          limLine.DrawLine(16, -Range[i - 1], 16, Range[i - 1]);
-          limLine.DrawLine(16 + 18, -Range[i - 1], 16 + 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18, -Range[i - 1], 16 + 2 * 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 26, -Range[i - 1], 16 + 2 * 18 + 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 2 * 26, -Range[i - 1], 16 + 2 * 18 + 2 * 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 3 * 26, -Range[i - 1], 16 + 2 * 18 + 3 * 26, Range[i - 1]);
           break;
         case 3:
           aHisto->SetYTitle("#delta_{#Z} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignZ->Draw("Psame goff");
-          limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
-          limLine.DrawLine(8, -Range[i - 1], 8, Range[i - 1]);
-          limLine.DrawLine(12, -Range[i - 1], 12, Range[i - 1]);
-          limLine.DrawLine(16, -Range[i - 1], 16, Range[i - 1]);
-          limLine.DrawLine(16 + 18, -Range[i - 1], 16 + 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18, -Range[i - 1], 16 + 2 * 18, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 26, -Range[i - 1], 16 + 2 * 18 + 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 2 * 26, -Range[i - 1], 16 + 2 * 18 + 2 * 26, Range[i - 1]);
-          limLine.DrawLine(16 + 2 * 18 + 3 * 26, -Range[i - 1], 16 + 2 * 18 + 3 * 26, Range[i - 1]);
           break;
         case 4:
+          aHisto->SetYTitle("#delta_{#psi} (cm)");
+          aHisto->DrawCopy("goff");
+          graphAlignPsi->Draw("Psame goff");
+          break;
+        case 5:
+          aHisto->SetYTitle("#delta_{#theta} (cm)");
+          aHisto->DrawCopy("goff");
+          graphAlignTht->Draw("Psame goff");
+          break;
+        case 6:
           aHisto->SetYTitle("#delta_{#varphi} (cm)");
-          aHisto->GetYaxis()->SetRangeUser(-Range[i - 1], Range[i - 1]);
           aHisto->DrawCopy("goff");
           graphAlignPhi->Draw("Psame goff");
+          break;
           limLine.DrawLine(4, -Range[i - 1], 4, Range[i - 1]);
           limLine.DrawLine(8, -Range[i - 1], 8, Range[i - 1]);
           limLine.DrawLine(12, -Range[i - 1], 12, Range[i - 1]);
@@ -870,7 +891,6 @@ class AlignmentTask
           limLine.DrawLine(16 + 2 * 18 + 26, -Range[i - 1], 16 + 2 * 18 + 26, Range[i - 1]);
           limLine.DrawLine(16 + 2 * 18 + 2 * 26, -Range[i - 1], 16 + 2 * 18 + 2 * 26, Range[i - 1]);
           limLine.DrawLine(16 + 2 * 18 + 3 * 26, -Range[i - 1], 16 + 2 * 18 + 3 * 26, Range[i - 1]);
-          break;
       }
     }
 
@@ -1054,10 +1074,67 @@ o2::framework::DataProcessorSpec getAlignmentSpec(bool disableCCDB)
             // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
             // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
             // {"sigma-y", VariantType::Float, 0.05f, {"Sigma cut along Y"}},
-            {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P1
-            {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
-            {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
-            {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P1
+            // {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.1f, {"Allowed variation for x axis in cm"}}, // P2
+            // {"variation-y", VariantType::Float, 0.02f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0002f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.1f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.25f, {"Allowed variation for x axis in cm"}}, // P3
+            // {"variation-y", VariantType::Float, 0.05f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.0005f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.25f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.075f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P4
+            // {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.1f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.075f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P5
+            // {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.3f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.2f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P5
+            // {"variation-y", VariantType::Float, 0.1f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.001f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 0.5f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.2f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.13f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 5.0f, {"Allowed variation for x axis in cm"}}, // P6
+            // {"variation-y", VariantType::Float, 5.0f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 1.0f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 5.0f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.2f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.13f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 5.0f, {"Allowed variation for x axis in cm"}}, // P7
+            // {"variation-y", VariantType::Float, 5.0f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 1.0f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 10.0f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.2f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.13f, {"Sigma cut along Y"}},
+            // {"variation-x", VariantType::Float, 1.0f, {"Allowed variation for x axis in cm"}}, // P8
+            // {"variation-y", VariantType::Float, 0.5f, {"Allowed variation for y axis in cm"}},
+            // {"variation-phi", VariantType::Float, 0.01f, {"Allowed variation for phi axis in rad"}},
+            // {"variation-z", VariantType::Float, 2.0f, {"Allowed variation for z axis in cm"}},
+            // {"sigma-x", VariantType::Float, 0.2f, {"Sigma cut along X"}},
+            // {"sigma-y", VariantType::Float, 0.13f, {"Sigma cut along Y"}},
+            // {"fix-de", VariantType::String, "", {"DE fixing, ex 101,1019"}},
+            // {"mask-fix-de", VariantType::String, "", {"Mask for DE d.o.f fixing, ex 0,2,4"}},
+            // {"output", VariantType::String, "Alignment", {"Option for name of output file"}}
+            {"variation-x", VariantType::Float, 0.5f, {"Allowed variation for x axis in cm"}}, // P9
+            {"variation-y", VariantType::Float, 0.25f, {"Allowed variation for y axis in cm"}},
+            {"variation-phi", VariantType::Float, 0.005f, {"Allowed variation for phi axis in rad"}},
+            {"variation-z", VariantType::Float, 1.0f, {"Allowed variation for z axis in cm"}},
             {"sigma-x", VariantType::Float, 0.15f, {"Sigma cut along X"}},
             {"sigma-y", VariantType::Float, 0.1f, {"Sigma cut along Y"}},
             {"fix-de", VariantType::String, "", {"DE fixing, ex 101,1019"}},
